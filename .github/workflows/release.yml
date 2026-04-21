@@ -54,7 +54,11 @@ jobs:
 
       - name: Install Z3 (macOS)
         if: runner.os == 'macOS'
-        run: brew install z3
+        run: |
+          brew install z3
+          echo "Z3_SYS_Z3_HEADER=$(brew --prefix z3)/include/z3.h" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$(brew --prefix z3)/include" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix z3)/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Cache build
         uses: actions/cache@v4
