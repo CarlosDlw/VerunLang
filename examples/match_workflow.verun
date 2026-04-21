@@ -1,0 +1,66 @@
+enum Phase {
+    Draft,
+    Review,
+    Approved,
+    Rejected
+}
+
+const MAX_RETRIES: int = 3
+
+state Workflow {
+    phase: Phase
+    retries: int
+    score: int
+
+    invariant retries_bounded {
+        retries >= 0 && retries <= MAX_RETRIES
+    }
+
+    invariant approved_has_positive_score {
+        phase == Phase::Approved ==> score > 0
+    }
+
+    init {
+        phase = Phase::Draft
+        retries = 0
+        score = 0
+    }
+
+    transition submit(next: Phase, raw_score: int) {
+        where {
+            next != Phase::Rejected || retries < MAX_RETRIES
+        }
+
+        let bounded_score: int = max(raw_score, 0)
+
+        if next == Phase::Rejected {
+            retries += 1
+        } else if next == Phase::Review {
+            retries = retries
+        } else {
+            retries = 0
+        }
+
+        match next {
+            Phase::Draft => {
+                score = 0
+            },
+            Phase::Review => {
+                score = bounded_score
+            },
+            Phase::Approved => {
+                score = max(bounded_score, 1)
+            },
+            Phase::Rejected => {
+                score = 0
+            }
+        }
+
+        phase = next
+
+        ensure {
+            retries >= 0
+            retries <= MAX_RETRIES
+        }
+    }
+}

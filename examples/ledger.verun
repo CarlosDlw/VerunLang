@@ -1,0 +1,62 @@
+// Ledger — map-based balance tracking with function calls
+
+fn total(a: int, b: int) -> int
+
+state Ledger {
+    supply: int
+    reserve: int
+
+    invariant positive_supply {
+        supply >= 0
+    }
+
+    invariant positive_reserve {
+        reserve >= 0
+    }
+
+    invariant reserve_bounded {
+        reserve <= supply
+    }
+
+    init {
+        supply = 1000
+        reserve = 1000
+    }
+
+    transition mint(amount: int) {
+        where {
+            amount > 0
+        }
+        supply += amount
+        reserve += amount
+        ensure {
+            supply == old(supply) + amount
+            reserve == old(reserve) + amount
+        }
+    }
+
+    transition spend(amount: int) {
+        where {
+            amount > 0
+            amount <= reserve
+        }
+        reserve -= amount
+        ensure {
+            reserve == old(reserve) - amount
+            supply == old(supply)
+        }
+    }
+
+    transition burn(amount: int) {
+        where {
+            amount > 0
+            amount <= reserve
+        }
+        supply -= amount
+        reserve -= amount
+        ensure {
+            supply == old(supply) - amount
+            reserve == old(reserve) - amount
+        }
+    }
+}

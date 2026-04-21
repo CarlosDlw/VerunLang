@@ -1,0 +1,49 @@
+// Stack — array with indexed operations and assert
+
+state Stack {
+    data: int[16]
+    top: int
+
+    invariant valid_top {
+        top >= 0 && top <= 16
+    }
+
+    init {
+        top = 0
+    }
+
+    transition push(val: int) {
+        where {
+            top < 16
+        }
+        data[top] = val
+        top += 1
+        ensure {
+            top == old(top) + 1
+        }
+    }
+
+    transition pop() {
+        where {
+            top > 0
+        }
+        top -= 1
+        ensure {
+            top == old(top) - 1
+        }
+    }
+
+    transition swap(i: int, j: int) {
+        where {
+            i >= 0
+            i < top
+            j >= 0
+            j < top
+        }
+        assert i >= 0
+        assert j >= 0
+        ensure {
+            top == old(top)
+        }
+    }
+}

@@ -1,0 +1,57 @@
+// Voting system with formal guarantees
+
+state Voting {
+    votes_for: int
+    votes_against: int
+    total_voters: int
+    votes_cast: int
+
+    invariant votes_bounded {
+        votes_cast <= total_voters
+    }
+
+    invariant votes_sum {
+        votes_for + votes_against == votes_cast
+    }
+
+    invariant non_negative {
+        votes_for >= 0 && votes_against >= 0 && votes_cast >= 0
+    }
+
+    invariant total_positive {
+        total_voters > 0
+    }
+
+    init {
+        votes_for = 0
+        votes_against = 0
+        total_voters = 100
+        votes_cast = 0
+    }
+
+    transition vote_yes() {
+        where {
+            votes_cast < total_voters
+        }
+        votes_for += 1
+        votes_cast += 1
+        ensure {
+            votes_for == old(votes_for) + 1
+            votes_cast == old(votes_cast) + 1
+        }
+        emit VoteCast(true)
+    }
+
+    transition vote_no() {
+        where {
+            votes_cast < total_voters
+        }
+        votes_against += 1
+        votes_cast += 1
+        ensure {
+            votes_against == old(votes_against) + 1
+            votes_cast == old(votes_cast) + 1
+        }
+        emit VoteCast(false)
+    }
+}

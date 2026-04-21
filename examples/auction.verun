@@ -1,0 +1,66 @@
+// Auction state machine with phase transitions
+
+enum AuctionPhase {
+    Open,
+    Closed,
+    Finalized
+}
+
+state Auction {
+    phase: AuctionPhase
+    highest_bid: int
+    min_bid: int
+    bid_count: int
+
+    invariant bid_above_minimum {
+        highest_bid >= min_bid
+    }
+
+    invariant non_negative_bids {
+        bid_count >= 0
+    }
+
+    init {
+        phase = AuctionPhase::Open
+        highest_bid = 100
+        min_bid = 100
+        bid_count = 0
+    }
+
+    transition place_bid(amount: int) {
+        where {
+            phase == AuctionPhase::Open
+            amount > highest_bid
+        }
+        highest_bid = amount
+        bid_count += 1
+        ensure {
+            highest_bid == amount
+            bid_count == old(bid_count) + 1
+        }
+        emit BidPlaced(amount)
+    }
+
+    transition close_auction() {
+        where {
+            phase == AuctionPhase::Open
+        }
+        phase = AuctionPhase::Closed
+        ensure {
+            phase == AuctionPhase::Closed
+            highest_bid == old(highest_bid)
+        }
+        emit AuctionClosed(highest_bid)
+    }
+
+    transition finalize() {
+        where {
+            phase == AuctionPhase::Closed
+        }
+        phase = AuctionPhase::Finalized
+        ensure {
+            phase == AuctionPhase::Finalized
+        }
+        emit AuctionFinalized(highest_bid)
+    }
+}

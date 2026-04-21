@@ -1,0 +1,129 @@
+// Thermostat controller — demonstrates builtin functions (abs, min, max)
+// and the implication operator (==>)
+//
+// Models a thermostat with target temperature, hysteresis band,
+// and safety limits. Uses abs() for drift calculation,
+// min()/max() for clamping, and ==> for conditional safety rules.
+
+type SafeTemp = int where value >= -40 && value <= 150
+
+state Thermostat {
+    current: int
+    target: int
+    low_limit: int
+    high_limit: int
+    heating: bool
+    cooling: bool
+    drift: int
+
+    invariant valid_limits {
+        low_limit < high_limit
+    }
+
+    invariant safe_range {
+        low_limit >= -40 && high_limit <= 150
+    }
+
+    invariant target_in_range {
+        target >= low_limit && target <= high_limit
+    }
+
+    invariant no_simultaneous {
+        !(heating && cooling)
+    }
+
+    invariant drift_non_negative {
+        drift >= 0
+    }
+
+    // If heating is on, we must be below or at the target
+    invariant heating_implies_cold {
+        heating ==> current <= target
+    }
+
+    // If cooling is on, we must be above or at the target
+    invariant cooling_implies_hot {
+        cooling ==> current >= target
+    }
+
+    init {
+        current = 20
+        target = 22
+        low_limit = 10
+        high_limit = 35
+        heating = false
+        cooling = false
+        drift = 0
+    }
+
+    transition set_target(temp: SafeTemp) {
+        where {
+            temp >= low_limit
+            temp <= high_limit
+        }
+        target = temp
+        drift = abs(temp - current)
+        if temp > current {
+            heating = true
+            cooling = false
+        } else {
+            if temp < current {
+                cooling = true
+                heating = false
+            } else {
+                heating = false
+                cooling = false
+            }
+        }
+        ensure {
+            target == temp
+            drift == abs(temp - current)
+        }
+    }
+
+    transition update_reading(measured: int) {
+        where {
+            measured >= -40
+            measured <= 150
+        }
+        current = max(low_limit, min(high_limit, measured))
+        drift = abs(target - current)
+        if current < target {
+            heating = true
+            cooling = false
+        } else {
+            if current > target {
+                cooling = true
+                heating = false
+            } else {
+                heating = false
+                cooling = false
+            }
+        }
+    }
+
+    transition set_limits(new_low: int, new_high: int) {
+        where {
+            new_low >= -40
+            new_high <= 150
+            new_low < new_high
+            target >= new_low
+            target <= new_high
+        }
+        low_limit = new_low
+        high_limit = new_high
+        ensure {
+            low_limit == new_low
+            high_limit == new_high
+        }
+    }
+
+    transition emergency_off() {
+        heating = false
+        cooling = false
+        ensure {
+            heating == false
+            cooling == false
+        }
+    }
+}

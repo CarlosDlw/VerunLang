@@ -1,0 +1,47 @@
+// Clamped value with if/else — intentional invariant violation example
+// Run: verun check examples/clamped.verun -v
+// The 'set' transition SHOULD fail verification (no bounds check)
+
+state Clamped {
+    value: int
+    min: int
+    max: int
+
+    invariant in_bounds {
+        value >= min && value <= max
+    }
+
+    invariant valid_range {
+        min <= max
+    }
+
+    init {
+        value = 50
+        min = 0
+        max = 100
+    }
+
+    transition adjust(delta: int) {
+        where {
+            delta >= -100 && delta <= 100
+        }
+        if value + delta > max {
+            value = max
+        } else {
+            if value + delta < min {
+                value = min
+            } else {
+                value = value + delta
+            }
+        }
+        ensure {
+            value >= min && value <= max
+        }
+    }
+
+    // This transition intentionally violates the invariant
+    // It sets value without checking bounds
+    transition set(new_value: int) {
+        value = new_value
+    }
+}

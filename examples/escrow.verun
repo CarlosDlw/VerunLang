@@ -1,0 +1,111 @@
+// Escrow — demonstrates refinement types for financial domain constraints
+//
+// Models a payment escrow where amounts must always be positive,
+// percentages bounded, and conservation laws hold.
+// Refinement types eliminate the need for repetitive preconditions.
+
+type PositiveAmount = int where value > 0
+type Percentage = int where value >= 0 && value <= 100
+
+enum EscrowPhase {
+    Funded,
+    PartialRelease,
+    Completed,
+    Disputed,
+    Refunded
+}
+
+state Escrow {
+    deposited: PositiveAmount
+    released: int
+    refunded: int
+    phase: EscrowPhase
+    fee_percent: Percentage
+
+    invariant conservation {
+        released + refunded <= deposited
+    }
+
+    invariant non_negative_released {
+        released >= 0
+    }
+
+    invariant non_negative_refunded {
+        refunded >= 0
+    }
+
+    // If completed, everything must be released (minus fee)
+    invariant completed_means_released {
+        phase == EscrowPhase::Completed ==> released + refunded == deposited
+    }
+
+    // If refunded, nothing should have been released
+    invariant refunded_means_no_release {
+        phase == EscrowPhase::Refunded ==> released == 0
+    }
+
+    // Fee percent must always be valid
+    invariant valid_fee {
+        fee_percent >= 0 && fee_percent <= 100
+    }
+
+    init {
+        deposited = 1000
+        released = 0
+        refunded = 0
+        phase = EscrowPhase::Funded
+        fee_percent = 5
+    }
+
+    transition release(amount: PositiveAmount) {
+        where {
+            phase == EscrowPhase::Funded || phase == EscrowPhase::PartialRelease
+            released + refunded + amount <= deposited
+        }
+        released += amount
+        if released + refunded == deposited {
+            phase = EscrowPhase::Completed
+        } else {
+            phase = EscrowPhase::PartialRelease
+        }
+        ensure {
+            released == old(released) + amount
+        }
+    }
+
+    transition dispute() {
+        where {
+            phase == EscrowPhase::Funded || phase == EscrowPhase::PartialRelease
+        }
+        phase = EscrowPhase::Disputed
+        ensure {
+            phase == EscrowPhase::Disputed
+            released == old(released)
+        }
+    }
+
+    transition resolve_refund() {
+        where {
+            phase == EscrowPhase::Disputed
+            released == 0
+        }
+        refunded = deposited
+        phase = EscrowPhase::Refunded
+        ensure {
+            refunded == deposited
+            phase == EscrowPhase::Refunded
+        }
+    }
+
+    transition resolve_release() {
+        where {
+            phase == EscrowPhase::Disputed
+        }
+        released = deposited - refunded
+        phase = EscrowPhase::Completed
+        ensure {
+            released + refunded == deposited
+            phase == EscrowPhase::Completed
+        }
+    }
+}

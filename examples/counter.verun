@@ -1,0 +1,48 @@
+// Simple counter with bounds checking
+
+state Counter {
+    value: int
+    max_value: int
+
+    invariant non_negative {
+        value >= 0
+    }
+
+    invariant bounded {
+        value <= max_value
+    }
+
+    init {
+        value = 0
+        max_value = 100
+    }
+
+    transition increment(amount: int) {
+        where {
+            amount > 0
+            value + amount <= max_value
+        }
+        value += amount
+        ensure {
+            value == old(value) + amount
+        }
+    }
+
+    transition decrement(amount: int) {
+        where {
+            amount > 0
+            value - amount >= 0
+        }
+        value -= amount
+        ensure {
+            value == old(value) - amount
+        }
+    }
+
+    transition reset() {
+        value = 0
+        ensure {
+            value == 0
+        }
+    }
+}

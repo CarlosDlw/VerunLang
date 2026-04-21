@@ -1,0 +1,156 @@
+// Verun PEG Grammar
+
+program = _{ SOI ~ item* ~ EOI }
+
+item = _{ import_decl | const_decl | enum_def | type_def | state_def | fn_def }
+
+// --- Constants ---
+const_decl = { "const" ~ ident ~ ":" ~ type_expr ~ "=" ~ expr }
+
+// --- Imports ---
+import_decl = { "import" ~ string_lit ~ ("as" ~ ident)? }
+
+// --- Enum ---
+enum_def = { "enum" ~ ident ~ "{" ~ enum_variants ~ "}" }
+enum_variants = { ident ~ ("," ~ ident)* ~ ","? }
+
+// --- Type (struct/record or refined alias) ---
+type_def = { "type" ~ ident ~ "{" ~ field_list ~ "}" | "type" ~ ident ~ "=" ~ type_expr ~ ("where" ~ expr)? }
+field_list = { (field ~ ("," ~ field)* ~ ","?)? }
+field = { ident ~ ":" ~ type_expr }
+
+// --- State ---
+state_def = { "state" ~ ident ~ "{" ~ state_body ~ "}" }
+state_body = { state_member* }
+state_member = _{ const_decl | field_decl | invariant_decl | init_block | transition_decl }
+
+field_decl = { ident ~ ":" ~ type_expr }
+invariant_decl = { "invariant" ~ ident? ~ "{" ~ expr ~ "}" }
+
+init_block = { "init" ~ "{" ~ assignment_list ~ "}" }
+assignment_list = { assignment* }
+assignment = { ident ~ "=" ~ expr }
+
+// --- Transition ---
+transition_decl = { "transition" ~ ident ~ "(" ~ param_list? ~ ")" ~ "{" ~ transition_body ~ "}" }
+param_list = { param ~ ("," ~ param)* ~ ","? }
+param = { ident ~ ":" ~ type_expr }
+
+transition_body = { transition_clause* }
+transition_clause = _{ where_clause | ensure_clause | emit_clause | assert_stmt | statement }
+
+where_clause = { "where" ~ "{" ~ expr_list ~ "}" }
+ensure_clause = { "ensure" ~ "{" ~ expr_list ~ "}" }
+emit_clause = { "emit" ~ ident ~ "(" ~ arg_list? ~ ")" }
+
+expr_list = { expr* }
+
+// --- Functions ---
+fn_def = { extern_modifier? ~ "fn" ~ ident ~ "(" ~ param_list? ~ ")" ~ "->" ~ type_expr ~ fn_body? }
+extern_modifier = { "extern" }
+fn_body = { "{" ~ statement_list ~ "}" }
+statement_list = { statement* }
+
+// --- Statements ---
+statement = { match_stmt | if_stmt | let_stmt | indexed_compound_assign | indexed_assign | compound_assign | simple_assign }
+let_stmt = { "let" ~ ident ~ (":" ~ type_expr)? ~ "=" ~ expr }
+match_stmt = { "match" ~ expr ~ "{" ~ match_arm+ ~ "}" }
+match_arm = { match_pattern ~ "=>" ~ "{" ~ statement_list ~ "}" ~ ","? }
+match_pattern = { "_" | enum_variant | integer_lit | bool_lit | string_lit }
+simple_assign = { ident ~ "=" ~ expr }
+compound_assign = { ident ~ compound_op ~ expr }
+indexed_assign = { ident ~ "[" ~ expr ~ "]" ~ "=" ~ expr }
+indexed_compound_assign = { ident ~ "[" ~ expr ~ "]" ~ compound_op ~ expr }
+compound_op = { "+=" | "-=" | "*=" | "/=" }
+assert_stmt = { "assert" ~ expr }
+
+if_stmt = { "if" ~ expr ~ "{" ~ statement_list ~ "}" ~ else_clause? }
+else_clause = { "else" ~ (if_stmt | "{" ~ statement_list ~ "}") }
+
+// --- Types ---
+type_expr = {
+    map_type
+    | array_type
+    | base_type
+}
+base_type = { "int" | "real" | "bool" | "string" | qualified_ident }
+array_type = { base_type ~ "[" ~ integer_lit ~ "]" }
+map_type = { "map" ~ "[" ~ type_expr ~ "," ~ type_expr ~ "]" }
+
+// --- Expressions ---
+expr = { unary_op? ~ primary ~ (binary_op ~ unary_op? ~ primary)* }
+
+primary = _{
+    "(" ~ expr ~ ")"
+    | forall_expr
+    | exists_expr
+    | old_expr
+    | fn_call
+    | enum_variant
+    | real_lit
+    | integer_lit
+    | bool_lit
+    | string_lit
+    | ident_access
+}
+
+ident_access = { qualified_ident ~ (field_access | index_access | map_access_op)* }
+field_access = { "." ~ ident }
+index_access = { "[" ~ expr ~ "]" }
+map_access_op = { "[" ~ expr ~ "]" }
+
+fn_call = { qualified_ident ~ "(" ~ arg_list? ~ ")" }
+arg_list = { expr ~ ("," ~ expr)* ~ ","? }
+
+old_expr = { "old" ~ "(" ~ expr ~ ")" }
+
+forall_expr = { "forall" ~ ident ~ "in" ~ expr ~ ":" ~ expr }
+exists_expr = { "exists" ~ ident ~ "in" ~ expr ~ ":" ~ expr }
+
+enum_variant = { ident ~ ("::" ~ ident)+ }
+
+// --- Operators ---
+binary_op = _{
+    op_implies
+    | op_and | op_or
+    | op_lte | op_gte | op_lt | op_gt | op_eq | op_neq
+    | op_add | op_sub | op_mul | op_div | op_mod
+    | op_range
+}
+
+op_add = { "+" }
+op_sub = { "-" }
+op_mul = { "*" }
+op_div = { "/" }
+op_mod = { "%" }
+op_eq = { "==" }
+op_neq = { "!=" }
+op_lt = { "<" }
+op_gt = { ">" }
+op_lte = { "<=" }
+op_gte = { ">=" }
+op_and = { "&&" }
+op_or = { "||" }
+op_implies = { "==>" }
+op_range = { ".." }
+
+unary_op = _{ op_neg | op_not }
+op_neg = { "-" }
+op_not = { "!" }
+
+// --- Literals ---
+integer_lit = @{ ASCII_DIGIT+ }
+real_lit = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+bool_lit = { "true" | "false" }
+string_lit = @{ "\"" ~ string_inner ~ "\"" }
+string_inner = @{ (!("\"" | "\\") ~ ANY | "\\" ~ ANY)* }
+
+// --- Identifiers ---
+ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+qualified_ident = @{ ident ~ ("::" ~ ident)* }
+
+// --- Whitespace & Comments ---
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ line_comment | block_comment }
+line_comment = { "//" ~ (!"\n" ~ ANY)* }
+block_comment = { "/*" ~ (!"*/" ~ ANY)* ~ "*/" }

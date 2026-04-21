@@ -1,0 +1,119 @@
+// Rate Limiter — demonstrates implies, abs, min, max together
+//
+// Models an API rate limiter with token bucket algorithm.
+// Uses refinement types for positive capacities, builtins for
+// clamping, and implies for conditional invariants.
+
+type Capacity = int where value > 0
+type NonNegative = int where value >= 0
+
+state RateLimiter {
+    tokens: int
+    max_tokens: int
+    refill_rate: int
+    request_cost: int
+    denied_count: int
+    allowed_count: int
+    consecutive_denials: int
+
+    invariant tokens_bounded {
+        tokens >= 0 && tokens <= max_tokens
+    }
+
+    invariant positive_config {
+        max_tokens > 0 && refill_rate > 0 && request_cost > 0
+    }
+
+    invariant cost_bounded {
+        request_cost <= max_tokens
+    }
+
+    invariant counts_non_negative {
+        denied_count >= 0 && allowed_count >= 0
+    }
+
+    invariant consecutive_non_negative {
+        consecutive_denials >= 0
+    }
+
+    // If we have max tokens, there should be no consecutive denials
+    invariant full_means_no_denials {
+        tokens == max_tokens ==> consecutive_denials == 0
+    }
+
+    init {
+        tokens = 100
+        max_tokens = 100
+        refill_rate = 10
+        request_cost = 1
+        denied_count = 0
+        allowed_count = 0
+        consecutive_denials = 0
+    }
+
+    transition request() {
+        where {
+            tokens >= request_cost
+        }
+        tokens -= request_cost
+        allowed_count += 1
+        consecutive_denials = 0
+        ensure {
+            tokens == old(tokens) - request_cost
+            allowed_count == old(allowed_count) + 1
+            consecutive_denials == 0
+        }
+    }
+
+    transition deny() {
+        where {
+            tokens < request_cost
+        }
+        denied_count += 1
+        consecutive_denials += 1
+        ensure {
+            denied_count == old(denied_count) + 1
+            consecutive_denials == old(consecutive_denials) + 1
+        }
+    }
+
+    transition refill() {
+        // Refill tokens but never exceed max — using min() for clamping
+        tokens = min(tokens + refill_rate, max_tokens)
+        if tokens == max_tokens {
+            consecutive_denials = 0
+        }
+    }
+
+    transition configure(new_max: Capacity, new_rate: Capacity, new_cost: Capacity) {
+        where {
+            new_cost <= new_max
+        }
+        max_tokens = new_max
+        refill_rate = new_rate
+        request_cost = new_cost
+        // Clamp current tokens to new max
+        tokens = min(tokens, new_max)
+        if tokens == new_max {
+            consecutive_denials = 0
+        }
+        ensure {
+            max_tokens == new_max
+            refill_rate == new_rate
+            request_cost == new_cost
+        }
+    }
+
+    transition reset_counters() {
+        denied_count = 0
+        allowed_count = 0
+        consecutive_denials = 0
+        tokens = max_tokens
+        ensure {
+            denied_count == 0
+            allowed_count == 0
+            consecutive_denials == 0
+            tokens == max_tokens
+        }
+    }
+}

@@ -1,0 +1,102 @@
+// Multi-feature example: enums, if/else, postconditions, multiple invariants
+// Demonstrates a simple order lifecycle state machine
+
+enum OrderStatus {
+    Pending,
+    Confirmed,
+    Shipped,
+    Delivered,
+    Cancelled
+}
+
+state Order {
+    status: OrderStatus
+    items: int
+    total_price: int
+    paid: int
+    refunded: int
+
+    invariant positive_items {
+        items > 0
+    }
+
+    invariant positive_price {
+        total_price > 0
+    }
+
+    invariant payment_bounded {
+        paid >= 0 && paid <= total_price
+    }
+
+    invariant refund_bounded {
+        refunded >= 0 && refunded <= paid
+    }
+
+    init {
+        status = OrderStatus::Pending
+        items = 1
+        total_price = 100
+        paid = 0
+        refunded = 0
+    }
+
+    transition add_item(price: int) {
+        where {
+            status == OrderStatus::Pending
+            price > 0
+        }
+        items += 1
+        total_price += price
+        ensure {
+            items == old(items) + 1
+            total_price == old(total_price) + price
+        }
+    }
+
+    transition pay(amount: int) {
+        where {
+            status == OrderStatus::Pending
+            amount > 0
+            paid + amount <= total_price
+        }
+        paid += amount
+        if paid == total_price {
+            status = OrderStatus::Confirmed
+        }
+        ensure {
+            paid == old(paid) + amount
+        }
+    }
+
+    transition ship() {
+        where {
+            status == OrderStatus::Confirmed
+        }
+        status = OrderStatus::Shipped
+        ensure {
+            status == OrderStatus::Shipped
+        }
+    }
+
+    transition deliver() {
+        where {
+            status == OrderStatus::Shipped
+        }
+        status = OrderStatus::Delivered
+        ensure {
+            status == OrderStatus::Delivered
+        }
+    }
+
+    transition cancel() {
+        where {
+            status == OrderStatus::Pending
+        }
+        status = OrderStatus::Cancelled
+        refunded = paid
+        ensure {
+            status == OrderStatus::Cancelled
+            refunded == old(paid)
+        }
+    }
+}

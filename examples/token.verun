@@ -1,0 +1,67 @@
+// ERC-20-like token with verified invariants
+
+state Token {
+    total_supply: int
+    balance_a: int
+    balance_b: int
+
+    invariant supply_conservation {
+        balance_a + balance_b == total_supply
+    }
+
+    invariant non_negative_balances {
+        balance_a >= 0 && balance_b >= 0
+    }
+
+    invariant non_negative_supply {
+        total_supply >= 0
+    }
+
+    init {
+        total_supply = 1000
+        balance_a = 1000
+        balance_b = 0
+    }
+
+    transition transfer_a_to_b(amount: int) {
+        where {
+            amount > 0
+            amount <= balance_a
+        }
+        balance_a -= amount
+        balance_b += amount
+        ensure {
+            balance_a == old(balance_a) - amount
+            balance_b == old(balance_b) + amount
+            total_supply == old(total_supply)
+        }
+        emit Transfer(amount)
+    }
+
+    transition transfer_b_to_a(amount: int) {
+        where {
+            amount > 0
+            amount <= balance_b
+        }
+        balance_b -= amount
+        balance_a += amount
+        ensure {
+            balance_b == old(balance_b) - amount
+            balance_a == old(balance_a) + amount
+            total_supply == old(total_supply)
+        }
+        emit Transfer(amount)
+    }
+
+    transition mint(amount: int) {
+        where {
+            amount > 0
+        }
+        total_supply += amount
+        balance_a += amount
+        ensure {
+            total_supply == old(total_supply) + amount
+        }
+        emit Mint(amount)
+    }
+}

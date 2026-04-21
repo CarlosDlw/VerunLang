@@ -1,0 +1,47 @@
+// Buffer — array with quantified invariant
+
+state Buffer {
+    values: int[8]
+    length: int
+
+    invariant valid_length {
+        length >= 0 && length <= 8
+    }
+
+    invariant all_non_negative {
+        forall i in 0..length: values[i] >= 0
+    }
+
+    init {
+        length = 0
+    }
+
+    transition push(val: int) {
+        where {
+            val >= 0
+            length < 8
+        }
+        values[length] = val
+        length += 1
+        ensure {
+            length == old(length) + 1
+        }
+    }
+
+    transition pop() {
+        where {
+            length > 0
+        }
+        length -= 1
+        ensure {
+            length == old(length) - 1
+        }
+    }
+
+    transition clear() {
+        length = 0
+        ensure {
+            length == 0
+        }
+    }
+}
