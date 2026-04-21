@@ -387,13 +387,11 @@ impl TypeChecker {
 
     fn check_idents_in_expr(&mut self, expr: &Spanned<Expr>) {
         match &expr.node {
-            Expr::Ident(name) => {
-                if self.env.lookup_var(name).is_none() {
-                    self.errors.push(VerunError::UndefinedVariable {
-                        name: name.clone(),
-                        span: Some(expr.span),
-                    });
-                }
+            Expr::Ident(name) if self.env.lookup_var(name).is_none() => {
+                self.errors.push(VerunError::UndefinedVariable {
+                    name: name.clone(),
+                    span: Some(expr.span),
+                });
             }
             Expr::BinaryOp { left, right, .. } => {
                 self.check_idents_in_expr(left);
