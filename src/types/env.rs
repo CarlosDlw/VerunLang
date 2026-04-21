@@ -80,7 +80,7 @@ impl TypeEnv {
     pub fn is_valid_enum_variant(&self, enum_name: &str, variant: &str) -> bool {
         self.enums
             .get(enum_name)
-            .map_or(false, |variants| variants.contains(&variant.to_string()))
+            .is_some_and(|variants| variants.contains(&variant.to_string()))
     }
 
     pub fn define_function(&mut self, name: &str, sig: FunctionSig) {

@@ -30,15 +30,14 @@ fn strip_location_prefix(msg: &str) -> &str {
             if digit_end > 0 {
                 let after_digits = &rest[digit_end..];
                 // expect ":digits: "
-                if after_digits.starts_with(':') {
-                    let after_colon = &after_digits[1..];
+                if let Some(after_colon) = after_digits.strip_prefix(':') {
                     let col_end = after_colon
                         .find(|c: char| !c.is_ascii_digit())
                         .unwrap_or(after_colon.len());
                     if col_end > 0 {
                         let after_col = &after_colon[col_end..];
-                        if after_col.starts_with(": ") {
-                            return &after_col[2..];
+                        if let Some(stripped) = after_col.strip_prefix(": ") {
+                            return stripped;
                         }
                     }
                 }
@@ -86,7 +85,7 @@ pub fn render_error(error: &VerunError, source: &str, filename: &str) -> String 
             .ok();
     }
 
-    String::from_utf8(buf).unwrap_or_else(|_| message)
+    String::from_utf8(buf).unwrap_or(message)
 }
 
 pub fn render_errors(errors: &[VerunError], source: &str, filename: &str) -> String {

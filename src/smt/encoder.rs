@@ -116,10 +116,8 @@ impl<'ctx> Encoder<'ctx> {
                     UnaryOp::Neg => {
                         if let Some(i) = inner.as_int() {
                             Some(Dynamic::from_ast(&i.unary_minus()))
-                        } else if let Some(r) = inner.as_real() {
-                            Some(Dynamic::from_ast(&r.unary_minus()))
                         } else {
-                            None
+                            inner.as_real().map(|r| Dynamic::from_ast(&r.unary_minus()))
                         }
                     }
                     UnaryOp::Not => {
@@ -135,7 +133,7 @@ impl<'ctx> Encoder<'ctx> {
             }
             Expr::Old(inner) => {
                 let mut old_vars = vars.clone();
-                for (name, _) in vars {
+                for name in vars.keys() {
                     if let Some(stripped) = name.strip_prefix("pre_") {
                         old_vars.insert(stripped.to_string(), vars.get(name).unwrap().clone());
                     }

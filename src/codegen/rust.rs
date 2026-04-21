@@ -45,7 +45,7 @@ impl RustTarget {
     }
 
     fn gen_enum(&self, e: &crate::ast::types::EnumDef) -> String {
-        let mut out = format!("#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n");
+        let mut out = "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\n".to_string();
         out.push_str(&format!("pub enum {} {{\n", e.name.node));
         for variant in &e.variants {
             out.push_str(&format!("    {},\n", variant.node));
@@ -55,7 +55,7 @@ impl RustTarget {
     }
 
     fn gen_type_def(&self, t: &crate::ast::types::TypeDef) -> String {
-        let mut out = format!("#[derive(Debug, Clone)]\n");
+        let mut out = "#[derive(Debug, Clone)]\n".to_string();
         out.push_str(&format!("pub struct {} {{\n", t.name.node));
         for field in &t.fields {
             out.push_str(&format!(
@@ -75,7 +75,7 @@ impl RustTarget {
             out.push_str(&self.gen_const(c));
         }
 
-        out.push_str(&format!("#[derive(Debug, Clone)]\n"));
+        out.push_str("#[derive(Debug, Clone)]\n");
         out.push_str(&format!("pub struct {} {{\n", state.name.node));
         for field in &state.fields {
             out.push_str(&format!(
@@ -296,10 +296,10 @@ impl RustTarget {
     ) -> String {
         match stmt {
             Statement::Assign(assign) => {
-                if let Expr::Ident(name) = &assign.value.node {
-                    if *name == assign.target.node {
-                        return String::new();
-                    }
+                if let Expr::Ident(name) = &assign.value.node
+                    && *name == assign.target.node
+                {
+                    return String::new();
                 }
                 format!(
                     "self.{} = {}",

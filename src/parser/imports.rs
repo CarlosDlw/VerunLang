@@ -324,11 +324,9 @@ fn rewrite_statement(
             for arm in arms {
                 if let crate::ast::nodes::MatchPattern::EnumVariant { enum_name, .. } =
                     &mut arm.pattern.node
+                    && let Some(rewritten) = rewrite_qualified_name(file, alias_exports, enum_name)?
                 {
-                    if let Some(rewritten) = rewrite_qualified_name(file, alias_exports, enum_name)?
-                    {
-                        *enum_name = rewritten;
-                    }
+                    *enum_name = rewritten;
                 }
                 for s in &mut arm.body {
                     rewrite_statement(file, alias_exports, &mut s.node)?;

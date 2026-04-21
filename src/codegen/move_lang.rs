@@ -92,19 +92,14 @@ impl MoveTarget {
         out.push_str(&format!("        let s = {} {{\n", state.name.node));
         for (idx, field) in state.fields.iter().enumerate() {
             let mut initialized = "0".to_string();
-            if let Some(init) = &state.init {
-                if let Some(assign) = init
+            if let Some(init) = &state.init
+                && let Some(assign) = init
                     .assignments
                     .iter()
                     .find(|a| a.target.node == field.name.node)
-                {
-                    initialized = self.expr_to_move(
-                        &assign.value.node,
-                        &HashSet::new(),
-                        &HashSet::new(),
-                        false,
-                    );
-                }
+            {
+                initialized =
+                    self.expr_to_move(&assign.value.node, &HashSet::new(), &HashSet::new(), false);
             }
             let trailing = if idx + 1 == state.fields.len() {
                 ""

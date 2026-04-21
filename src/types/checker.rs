@@ -115,14 +115,14 @@ impl TypeChecker {
                 self.env.push_scope();
                 self.env.define_var("value", alias.node.clone());
                 let ref_ty = self.infer_expr(refinement);
-                if let Some(ty) = &ref_ty {
-                    if *ty != Type::Bool {
-                        self.errors.push(VerunError::TypeMismatch {
-                            expected: "bool".to_string(),
-                            found: format!("{:?}", ty),
-                            span: Some(refinement.span),
-                        });
-                    }
+                if let Some(ty) = &ref_ty
+                    && *ty != Type::Bool
+                {
+                    self.errors.push(VerunError::TypeMismatch {
+                        expected: "bool".to_string(),
+                        found: format!("{:?}", ty),
+                        span: Some(refinement.span),
+                    });
                 }
                 self.env.pop_scope();
             }
@@ -151,14 +151,14 @@ impl TypeChecker {
                 c.ty.node.clone()
             }
         };
-        if let Some(val_ty) = self.infer_expr(&c.value) {
-            if !types_compatible(&expected, &val_ty) {
-                self.errors.push(VerunError::TypeMismatch {
-                    expected: format!("{:?}", expected),
-                    found: format!("{:?}", val_ty),
-                    span: Some(c.value.span),
-                });
-            }
+        if let Some(val_ty) = self.infer_expr(&c.value)
+            && !types_compatible(&expected, &val_ty)
+        {
+            self.errors.push(VerunError::TypeMismatch {
+                expected: format!("{:?}", expected),
+                found: format!("{:?}", val_ty),
+                span: Some(c.value.span),
+            });
         }
         self.env.define_var(&c.name.node, expected);
     }
@@ -222,22 +222,22 @@ impl TypeChecker {
         let mut seen_invariants: std::collections::HashSet<String> =
             std::collections::HashSet::new();
         for inv in &state.invariants {
-            if let Some(name) = &inv.name {
-                if !seen_invariants.insert(name.node.clone()) {
-                    self.errors.push(VerunError::DuplicateDefinition {
-                        name: name.node.clone(),
-                        span: Some(name.span),
-                    });
-                }
+            if let Some(name) = &inv.name
+                && !seen_invariants.insert(name.node.clone())
+            {
+                self.errors.push(VerunError::DuplicateDefinition {
+                    name: name.node.clone(),
+                    span: Some(name.span),
+                });
             }
-            if let Some(ty) = self.infer_expr(&inv.condition) {
-                if ty != Type::Bool {
-                    self.errors.push(VerunError::TypeMismatch {
-                        expected: "bool".to_string(),
-                        found: format!("{:?}", ty),
-                        span: Some(inv.condition.span),
-                    });
-                }
+            if let Some(ty) = self.infer_expr(&inv.condition)
+                && ty != Type::Bool
+            {
+                self.errors.push(VerunError::TypeMismatch {
+                    expected: "bool".to_string(),
+                    found: format!("{:?}", ty),
+                    span: Some(inv.condition.span),
+                });
             }
             self.check_idents_in_expr(&inv.condition);
         }
@@ -252,16 +252,15 @@ impl TypeChecker {
                         span: Some(assign.target.span),
                     });
                 } else {
-                    if let Some(field_ty) = self.env.lookup_var(&assign.target.node).cloned() {
-                        if let Some(val_ty) = self.infer_expr(&assign.value) {
-                            if !types_compatible(&field_ty, &val_ty) {
-                                self.errors.push(VerunError::TypeMismatch {
-                                    expected: format!("{:?}", field_ty),
-                                    found: format!("{:?}", val_ty),
-                                    span: Some(assign.value.span),
-                                });
-                            }
-                        }
+                    if let Some(field_ty) = self.env.lookup_var(&assign.target.node).cloned()
+                        && let Some(val_ty) = self.infer_expr(&assign.value)
+                        && !types_compatible(&field_ty, &val_ty)
+                    {
+                        self.errors.push(VerunError::TypeMismatch {
+                            expected: format!("{:?}", field_ty),
+                            found: format!("{:?}", val_ty),
+                            span: Some(assign.value.span),
+                        });
                     }
                 }
                 initialized.insert(assign.target.node.clone());
@@ -326,14 +325,14 @@ impl TypeChecker {
         for pre in &transition.preconditions {
             self.check_expr_no_old(pre);
             self.check_idents_in_expr(pre);
-            if let Some(ty) = self.infer_expr(pre) {
-                if ty != Type::Bool {
-                    self.errors.push(VerunError::TypeMismatch {
-                        expected: "bool".to_string(),
-                        found: format!("{:?}", ty),
-                        span: Some(pre.span),
-                    });
-                }
+            if let Some(ty) = self.infer_expr(pre)
+                && ty != Type::Bool
+            {
+                self.errors.push(VerunError::TypeMismatch {
+                    expected: "bool".to_string(),
+                    found: format!("{:?}", ty),
+                    span: Some(pre.span),
+                });
             }
         }
 
@@ -344,14 +343,14 @@ impl TypeChecker {
         self.in_postcondition = true;
         for post in &transition.postconditions {
             self.check_idents_in_expr(post);
-            if let Some(ty) = self.infer_expr(post) {
-                if ty != Type::Bool {
-                    self.errors.push(VerunError::TypeMismatch {
-                        expected: "bool".to_string(),
-                        found: format!("{:?}", ty),
-                        span: Some(post.span),
-                    });
-                }
+            if let Some(ty) = self.infer_expr(post)
+                && ty != Type::Bool
+            {
+                self.errors.push(VerunError::TypeMismatch {
+                    expected: "bool".to_string(),
+                    found: format!("{:?}", ty),
+                    span: Some(post.span),
+                });
             }
         }
         self.in_postcondition = false;
@@ -413,7 +412,7 @@ impl TypeChecker {
             }
             Expr::Forall { var, domain, body } | Expr::Exists { var, domain, body } => {
                 self.env.push_scope();
-                if let Some(resolved) = self.env.lookup_var(&var.node).cloned().or_else(|| {
+                if let Some(resolved) = self.env.lookup_var(&var.node).cloned().or({
                     // try resolving domain as a type — for set/range quantifiers the type
                     // comes from the domain expression; just register as Int for now
                     None
@@ -446,14 +445,14 @@ impl TypeChecker {
         match &stmt.node {
             Statement::Assign(assign) => {
                 if let Some(field_ty) = self.env.lookup_var(&assign.target.node).cloned() {
-                    if let Some(val_ty) = self.infer_expr(&assign.value) {
-                        if !types_compatible(&field_ty, &val_ty) {
-                            self.errors.push(VerunError::TypeMismatch {
-                                expected: format!("{:?}", field_ty),
-                                found: format!("{:?}", val_ty),
-                                span: Some(assign.value.span),
-                            });
-                        }
+                    if let Some(val_ty) = self.infer_expr(&assign.value)
+                        && !types_compatible(&field_ty, &val_ty)
+                    {
+                        self.errors.push(VerunError::TypeMismatch {
+                            expected: format!("{:?}", field_ty),
+                            found: format!("{:?}", val_ty),
+                            span: Some(assign.value.span),
+                        });
                     }
                 } else {
                     self.errors.push(VerunError::UndefinedVariable {
@@ -465,14 +464,14 @@ impl TypeChecker {
             }
             Statement::CompoundAssign { target, value, .. } => {
                 if let Some(field_ty) = self.env.lookup_var(&target.node).cloned() {
-                    if let Some(val_ty) = self.infer_expr(value) {
-                        if !types_compatible(&field_ty, &val_ty) {
-                            self.errors.push(VerunError::TypeMismatch {
-                                expected: format!("{:?}", field_ty),
-                                found: format!("{:?}", val_ty),
-                                span: Some(value.span),
-                            });
-                        }
+                    if let Some(val_ty) = self.infer_expr(value)
+                        && !types_compatible(&field_ty, &val_ty)
+                    {
+                        self.errors.push(VerunError::TypeMismatch {
+                            expected: format!("{:?}", field_ty),
+                            found: format!("{:?}", val_ty),
+                            span: Some(value.span),
+                        });
                     }
                 } else {
                     self.errors.push(VerunError::UndefinedVariable {
@@ -490,43 +489,43 @@ impl TypeChecker {
                 if let Some(field_ty) = self.env.lookup_var(&target.node).cloned() {
                     match &field_ty {
                         Type::Array { element, .. } => {
-                            if let Some(val_ty) = self.infer_expr(value) {
-                                if !types_compatible(element, &val_ty) {
-                                    self.errors.push(VerunError::TypeMismatch {
-                                        expected: format!("{:?}", element),
-                                        found: format!("{:?}", val_ty),
-                                        span: Some(value.span),
-                                    });
-                                }
+                            if let Some(val_ty) = self.infer_expr(value)
+                                && !types_compatible(element, &val_ty)
+                            {
+                                self.errors.push(VerunError::TypeMismatch {
+                                    expected: format!("{:?}", element),
+                                    found: format!("{:?}", val_ty),
+                                    span: Some(value.span),
+                                });
                             }
-                            if let Some(idx_ty) = self.infer_expr(index) {
-                                if idx_ty != Type::Int {
-                                    self.errors.push(VerunError::TypeMismatch {
-                                        expected: "Int".to_string(),
-                                        found: format!("{:?}", idx_ty),
-                                        span: Some(index.span),
-                                    });
-                                }
+                            if let Some(idx_ty) = self.infer_expr(index)
+                                && idx_ty != Type::Int
+                            {
+                                self.errors.push(VerunError::TypeMismatch {
+                                    expected: "Int".to_string(),
+                                    found: format!("{:?}", idx_ty),
+                                    span: Some(index.span),
+                                });
                             }
                         }
                         Type::Map { key, value: val_ty } => {
-                            if let Some(idx_ty) = self.infer_expr(index) {
-                                if !types_compatible(key, &idx_ty) {
-                                    self.errors.push(VerunError::TypeMismatch {
-                                        expected: format!("{:?}", key),
-                                        found: format!("{:?}", idx_ty),
-                                        span: Some(index.span),
-                                    });
-                                }
+                            if let Some(idx_ty) = self.infer_expr(index)
+                                && !types_compatible(key, &idx_ty)
+                            {
+                                self.errors.push(VerunError::TypeMismatch {
+                                    expected: format!("{:?}", key),
+                                    found: format!("{:?}", idx_ty),
+                                    span: Some(index.span),
+                                });
                             }
-                            if let Some(v_ty) = self.infer_expr(value) {
-                                if !types_compatible(val_ty, &v_ty) {
-                                    self.errors.push(VerunError::TypeMismatch {
-                                        expected: format!("{:?}", val_ty),
-                                        found: format!("{:?}", v_ty),
-                                        span: Some(value.span),
-                                    });
-                                }
+                            if let Some(v_ty) = self.infer_expr(value)
+                                && !types_compatible(val_ty, &v_ty)
+                            {
+                                self.errors.push(VerunError::TypeMismatch {
+                                    expected: format!("{:?}", val_ty),
+                                    found: format!("{:?}", v_ty),
+                                    span: Some(value.span),
+                                });
                             }
                         }
                         _ => {
@@ -555,25 +554,25 @@ impl TypeChecker {
                 if let Some(field_ty) = self.env.lookup_var(&target.node).cloned() {
                     match &field_ty {
                         Type::Array { element, .. } => {
-                            if let Some(val_ty) = self.infer_expr(value) {
-                                if !types_compatible(element, &val_ty) {
-                                    self.errors.push(VerunError::TypeMismatch {
-                                        expected: format!("{:?}", element),
-                                        found: format!("{:?}", val_ty),
-                                        span: Some(value.span),
-                                    });
-                                }
+                            if let Some(val_ty) = self.infer_expr(value)
+                                && !types_compatible(element, &val_ty)
+                            {
+                                self.errors.push(VerunError::TypeMismatch {
+                                    expected: format!("{:?}", element),
+                                    found: format!("{:?}", val_ty),
+                                    span: Some(value.span),
+                                });
                             }
                         }
                         Type::Map { value: val_ty, .. } => {
-                            if let Some(v_ty) = self.infer_expr(value) {
-                                if !types_compatible(val_ty, &v_ty) {
-                                    self.errors.push(VerunError::TypeMismatch {
-                                        expected: format!("{:?}", val_ty),
-                                        found: format!("{:?}", v_ty),
-                                        span: Some(value.span),
-                                    });
-                                }
+                            if let Some(v_ty) = self.infer_expr(value)
+                                && !types_compatible(val_ty, &v_ty)
+                            {
+                                self.errors.push(VerunError::TypeMismatch {
+                                    expected: format!("{:?}", val_ty),
+                                    found: format!("{:?}", v_ty),
+                                    span: Some(value.span),
+                                });
                             }
                         }
                         _ => {
@@ -594,14 +593,14 @@ impl TypeChecker {
                 self.check_expr_no_old(value);
             }
             Statement::Assert { condition } => {
-                if let Some(ty) = self.infer_expr(condition) {
-                    if ty != Type::Bool {
-                        self.errors.push(VerunError::TypeMismatch {
-                            expected: "bool".to_string(),
-                            found: format!("{:?}", ty),
-                            span: Some(condition.span),
-                        });
-                    }
+                if let Some(ty) = self.infer_expr(condition)
+                    && ty != Type::Bool
+                {
+                    self.errors.push(VerunError::TypeMismatch {
+                        expected: "bool".to_string(),
+                        found: format!("{:?}", ty),
+                        span: Some(condition.span),
+                    });
                 }
                 self.check_expr_no_old(condition);
             }
@@ -610,14 +609,14 @@ impl TypeChecker {
                 then_body,
                 else_body,
             } => {
-                if let Some(ty) = self.infer_expr(condition) {
-                    if ty != Type::Bool {
-                        self.errors.push(VerunError::TypeMismatch {
-                            expected: "bool".to_string(),
-                            found: format!("{:?}", ty),
-                            span: Some(condition.span),
-                        });
-                    }
+                if let Some(ty) = self.infer_expr(condition)
+                    && ty != Type::Bool
+                {
+                    self.errors.push(VerunError::TypeMismatch {
+                        expected: "bool".to_string(),
+                        found: format!("{:?}", ty),
+                        span: Some(condition.span),
+                    });
                 }
                 for s in then_body {
                     self.check_statement(s);
@@ -638,14 +637,14 @@ impl TypeChecker {
                             explicit_ty.node.clone()
                         }
                     };
-                    if let Some(ref val_ty) = inferred {
-                        if !types_compatible(&resolved, val_ty) {
-                            self.errors.push(VerunError::TypeMismatch {
-                                expected: format!("{:?}", resolved),
-                                found: format!("{:?}", val_ty),
-                                span: Some(value.span),
-                            });
-                        }
+                    if let Some(ref val_ty) = inferred
+                        && !types_compatible(&resolved, val_ty)
+                    {
+                        self.errors.push(VerunError::TypeMismatch {
+                            expected: format!("{:?}", resolved),
+                            found: format!("{:?}", val_ty),
+                            span: Some(value.span),
+                        });
                     }
                     self.env.define_var(&name.node, resolved);
                 } else if let Some(val_ty) = inferred {
@@ -660,30 +659,29 @@ impl TypeChecker {
                         self.check_statement(s);
                     }
                 }
-                if let Some(ty) = &expr_ty {
-                    if let Type::Named(name) | Type::Enum(name) = ty {
-                        if let Some(variants) = self.env.lookup_enum(name) {
-                            let mut has_wildcard = false;
-                            let mut covered: std::collections::HashSet<String> =
-                                std::collections::HashSet::new();
-                            for arm in arms {
-                                match &arm.pattern.node {
-                                    MatchPattern::Wildcard => has_wildcard = true,
-                                    MatchPattern::EnumVariant { variant, .. } => {
-                                        covered.insert(variant.clone());
-                                    }
-                                    _ => {}
-                                }
+                if let Some(ty) = &expr_ty
+                    && let Type::Named(name) | Type::Enum(name) = ty
+                    && let Some(variants) = self.env.lookup_enum(name)
+                {
+                    let mut has_wildcard = false;
+                    let mut covered: std::collections::HashSet<String> =
+                        std::collections::HashSet::new();
+                    for arm in arms {
+                        match &arm.pattern.node {
+                            MatchPattern::Wildcard => has_wildcard = true,
+                            MatchPattern::EnumVariant { variant, .. } => {
+                                covered.insert(variant.clone());
                             }
-                            if !has_wildcard {
-                                for v in variants {
-                                    if !covered.contains(v) {
-                                        self.errors.push(VerunError::NonExhaustiveMatch {
-                                            missing: (*v).clone(),
-                                            span: Some(expr.span),
-                                        });
-                                    }
-                                }
+                            _ => {}
+                        }
+                    }
+                    if !has_wildcard {
+                        for v in variants {
+                            if !covered.contains(v) {
+                                self.errors.push(VerunError::NonExhaustiveMatch {
+                                    missing: (*v).clone(),
+                                    span: Some(expr.span),
+                                });
                             }
                         }
                     }
@@ -749,13 +747,13 @@ impl TypeChecker {
                     self.errors.push(VerunError::OldOutsideEnsure {
                         span: Some(expr.span),
                     });
-                } else if let Expr::Ident(name) = &inner.node {
-                    if self.param_names.contains(name.as_str()) {
-                        self.errors.push(VerunError::OldOnParameter {
-                            name: name.clone(),
-                            span: Some(expr.span),
-                        });
-                    }
+                } else if let Expr::Ident(name) = &inner.node
+                    && self.param_names.contains(name.as_str())
+                {
+                    self.errors.push(VerunError::OldOnParameter {
+                        name: name.clone(),
+                        span: Some(expr.span),
+                    });
                 }
                 self.infer_expr(inner)
             }
@@ -763,10 +761,10 @@ impl TypeChecker {
             Expr::FnCall { name, args } => self.infer_call(expr.span, &name.node, args),
             Expr::FieldAccess { object, field } => {
                 let obj_ty = self.infer_expr(object)?;
-                if let Type::Named(name) = &obj_ty {
-                    if let Some(TypeEntry::Struct(fields)) = self.env.lookup_type(name) {
-                        return fields.get(&field.node).cloned();
-                    }
+                if let Type::Named(name) = &obj_ty
+                    && let Some(TypeEntry::Struct(fields)) = self.env.lookup_type(name)
+                {
+                    return fields.get(&field.node).cloned();
                 }
                 None
             }
@@ -840,14 +838,14 @@ impl TypeChecker {
         }
 
         for (arg_expr, param_ty) in args.iter().zip(sig.params.iter()) {
-            if let Some(arg_ty) = self.infer_expr(arg_expr) {
-                if !types_compatible(param_ty, &arg_ty) {
-                    self.errors.push(VerunError::TypeMismatch {
-                        expected: format!("{:?}", param_ty),
-                        found: format!("{:?}", arg_ty),
-                        span: Some(arg_expr.span),
-                    });
-                }
+            if let Some(arg_ty) = self.infer_expr(arg_expr)
+                && !types_compatible(param_ty, &arg_ty)
+            {
+                self.errors.push(VerunError::TypeMismatch {
+                    expected: format!("{:?}", param_ty),
+                    found: format!("{:?}", arg_ty),
+                    span: Some(arg_expr.span),
+                });
             }
         }
 

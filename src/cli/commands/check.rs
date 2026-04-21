@@ -95,10 +95,8 @@ pub fn execute(file: &str, verbose: bool, format: &str) -> Result<()> {
                 } else if is_dead_transition {
                     warning_checks += 1;
                     eprintln!("  [WARN] {}", check.kind);
-                    if verbose {
-                        if let Some(ce) = &check.counterexample {
-                            eprint!("{}", ce.format_readable());
-                        }
+                    if verbose && let Some(ce) = &check.counterexample {
+                        eprint!("{}", ce.format_readable());
                     }
                 } else {
                     all_passed = false;

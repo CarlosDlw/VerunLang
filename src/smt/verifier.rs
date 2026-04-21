@@ -163,10 +163,10 @@ impl<'ctx> Verifier<'ctx> {
     }
 
     fn resolve_type_for_field(&self, ty: &crate::ast::types::Type) -> crate::ast::types::Type {
-        if let crate::ast::types::Type::Named(name) = ty {
-            if let Some((base_ty, _)) = self.refinements.get(name) {
-                return base_ty.clone();
-            }
+        if let crate::ast::types::Type::Named(name) = ty
+            && let Some((base_ty, _)) = self.refinements.get(name)
+        {
+            return base_ty.clone();
         }
         ty.clone()
     }
@@ -178,17 +178,17 @@ impl<'ctx> Verifier<'ctx> {
         session: &SolverSession<'ctx>,
     ) {
         for field in fields {
-            if let crate::ast::types::Type::Named(type_name) = &field.ty.node {
-                if let Some((_base_ty, refinement)) = self.refinements.get(type_name) {
-                    let mut ref_vars = vars.clone();
-                    if let Some(val) = vars.get(&field.name.node) {
-                        ref_vars.insert("value".to_string(), val.clone());
-                    }
-                    if let Some(encoded) = self.encoder.encode_expr(refinement, &ref_vars) {
-                        if let Some(bool_expr) = encoded.as_bool() {
-                            session.assert(&bool_expr);
-                        }
-                    }
+            if let crate::ast::types::Type::Named(type_name) = &field.ty.node
+                && let Some((_base_ty, refinement)) = self.refinements.get(type_name)
+            {
+                let mut ref_vars = vars.clone();
+                if let Some(val) = vars.get(&field.name.node) {
+                    ref_vars.insert("value".to_string(), val.clone());
+                }
+                if let Some(encoded) = self.encoder.encode_expr(refinement, &ref_vars)
+                    && let Some(bool_expr) = encoded.as_bool()
+                {
+                    session.assert(&bool_expr);
                 }
             }
         }
@@ -201,17 +201,17 @@ impl<'ctx> Verifier<'ctx> {
         session: &SolverSession<'ctx>,
     ) {
         for param in params {
-            if let crate::ast::types::Type::Named(type_name) = &param.ty.node {
-                if let Some((_base_ty, refinement)) = self.refinements.get(type_name) {
-                    let mut ref_vars = vars.clone();
-                    if let Some(val) = vars.get(&param.name.node) {
-                        ref_vars.insert("value".to_string(), val.clone());
-                    }
-                    if let Some(encoded) = self.encoder.encode_expr(refinement, &ref_vars) {
-                        if let Some(bool_expr) = encoded.as_bool() {
-                            session.assert(&bool_expr);
-                        }
-                    }
+            if let crate::ast::types::Type::Named(type_name) = &param.ty.node
+                && let Some((_base_ty, refinement)) = self.refinements.get(type_name)
+            {
+                let mut ref_vars = vars.clone();
+                if let Some(val) = vars.get(&param.name.node) {
+                    ref_vars.insert("value".to_string(), val.clone());
+                }
+                if let Some(encoded) = self.encoder.encode_expr(refinement, &ref_vars)
+                    && let Some(bool_expr) = encoded.as_bool()
+                {
+                    session.assert(&bool_expr);
                 }
             }
         }
@@ -234,15 +234,15 @@ impl<'ctx> Verifier<'ctx> {
 
         for assign in &init.assignments {
             let var_name = &assign.target.node;
-            if let Some(var) = vars.get(var_name) {
-                if let Some(val) = self.encoder.encode_expr(&assign.value, &vars) {
-                    if let (Some(v), Some(e)) = (var.as_int(), val.as_int()) {
-                        session.assert(&v._eq(&e));
-                    } else if let (Some(v), Some(e)) = (var.as_bool(), val.as_bool()) {
-                        session.assert(&v._eq(&e));
-                    } else if let (Some(v), Some(e)) = (var.as_real(), val.as_real()) {
-                        session.assert(&v._eq(&e));
-                    }
+            if let Some(var) = vars.get(var_name)
+                && let Some(val) = self.encoder.encode_expr(&assign.value, &vars)
+            {
+                if let (Some(v), Some(e)) = (var.as_int(), val.as_int()) {
+                    session.assert(&v._eq(&e));
+                } else if let (Some(v), Some(e)) = (var.as_bool(), val.as_bool()) {
+                    session.assert(&v._eq(&e));
+                } else if let (Some(v), Some(e)) = (var.as_real(), val.as_real()) {
+                    session.assert(&v._eq(&e));
                 }
             }
         }
@@ -356,20 +356,20 @@ impl<'ctx> Verifier<'ctx> {
         }
 
         for inv in &state.invariants {
-            if let Some(encoded) = self.encoder.encode_expr(&inv.condition, &pre_vars) {
-                if let Some(bool_expr) = encoded.as_bool() {
-                    session.assert(&bool_expr);
-                }
+            if let Some(encoded) = self.encoder.encode_expr(&inv.condition, &pre_vars)
+                && let Some(bool_expr) = encoded.as_bool()
+            {
+                session.assert(&bool_expr);
             }
         }
 
         self.assert_refinements_for_fields(&state.fields, &pre_vars, &session);
 
         for pre in &transition.preconditions {
-            if let Some(encoded) = self.encoder.encode_expr(pre, &all_vars) {
-                if let Some(bool_expr) = encoded.as_bool() {
-                    session.assert(&bool_expr);
-                }
+            if let Some(encoded) = self.encoder.encode_expr(pre, &all_vars)
+                && let Some(bool_expr) = encoded.as_bool()
+            {
+                session.assert(&bool_expr);
             }
         }
 
@@ -381,10 +381,8 @@ impl<'ctx> Verifier<'ctx> {
 
         let mut post_eval_vars = post_vars.clone();
         for (name, var) in &pre_vars {
-            if !name.starts_with("pre_") {
-                if !post_eval_vars.contains_key(name) {
-                    post_eval_vars.insert(name.clone(), var.clone());
-                }
+            if !name.starts_with("pre_") && !post_eval_vars.contains_key(name) {
+                post_eval_vars.insert(name.clone(), var.clone());
             }
         }
         for field in &state.fields {
@@ -527,20 +525,20 @@ impl<'ctx> Verifier<'ctx> {
         }
 
         for inv in &state.invariants {
-            if let Some(encoded) = self.encoder.encode_expr(&inv.condition, &pre_vars) {
-                if let Some(bool_expr) = encoded.as_bool() {
-                    session.assert(&bool_expr);
-                }
+            if let Some(encoded) = self.encoder.encode_expr(&inv.condition, &pre_vars)
+                && let Some(bool_expr) = encoded.as_bool()
+            {
+                session.assert(&bool_expr);
             }
         }
 
         self.assert_refinements_for_fields(&state.fields, &pre_vars, &session);
 
         for pre in &transition.preconditions {
-            if let Some(encoded) = self.encoder.encode_expr(pre, &all_vars) {
-                if let Some(bool_expr) = encoded.as_bool() {
-                    session.assert(&bool_expr);
-                }
+            if let Some(encoded) = self.encoder.encode_expr(pre, &all_vars)
+                && let Some(bool_expr) = encoded.as_bool()
+            {
+                session.assert(&bool_expr);
             }
         }
 
@@ -676,20 +674,20 @@ impl<'ctx> Verifier<'ctx> {
         }
 
         for inv in &state.invariants {
-            if let Some(encoded) = self.encoder.encode_expr(&inv.condition, &vars) {
-                if let Some(bool_expr) = encoded.as_bool() {
-                    session.assert(&bool_expr);
-                }
+            if let Some(encoded) = self.encoder.encode_expr(&inv.condition, &vars)
+                && let Some(bool_expr) = encoded.as_bool()
+            {
+                session.assert(&bool_expr);
             }
         }
 
         self.assert_refinements_for_fields(&state.fields, &vars, &session);
 
         for pre in &transition.preconditions {
-            if let Some(encoded) = self.encoder.encode_expr(pre, &all_vars) {
-                if let Some(bool_expr) = encoded.as_bool() {
-                    session.assert(&bool_expr);
-                }
+            if let Some(encoded) = self.encoder.encode_expr(pre, &all_vars)
+                && let Some(bool_expr) = encoded.as_bool()
+            {
+                session.assert(&bool_expr);
             }
         }
 
@@ -793,6 +791,8 @@ impl<'ctx> Verifier<'ctx> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::only_used_in_recursion)]
     fn encode_statement_ssa(
         &self,
         stmt: &Spanned<Statement>,
@@ -843,11 +843,11 @@ impl<'ctx> Verifier<'ctx> {
                 let arr = current_values.get(&target.node).cloned();
                 let idx = self.encoder.encode_expr(index, current_values);
                 let val = self.encoder.encode_expr(value, current_values);
-                if let (Some(a), Some(i), Some(v)) = (arr, idx, val) {
-                    if let Some(arr_z3) = a.as_array() {
-                        let stored = Dynamic::from_ast(&arr_z3.store(&i, &v));
-                        current_values.insert(target.node.clone(), stored);
-                    }
+                if let (Some(a), Some(i), Some(v)) = (arr, idx, val)
+                    && let Some(arr_z3) = a.as_array()
+                {
+                    let stored = Dynamic::from_ast(&arr_z3.store(&i, &v));
+                    current_values.insert(target.node.clone(), stored);
                 }
                 modified.insert(target.node.clone());
             }
@@ -860,37 +860,37 @@ impl<'ctx> Verifier<'ctx> {
                 let arr = current_values.get(&target.node).cloned();
                 let idx = self.encoder.encode_expr(index, current_values);
                 let val = self.encoder.encode_expr(value, current_values);
-                if let (Some(a), Some(i), Some(v)) = (arr, idx, val) {
-                    if let Some(arr_z3) = a.as_array() {
-                        let current_elem = arr_z3.select(&i);
-                        if let (Some(ce), Some(ev)) = (current_elem.as_int(), v.as_int()) {
-                            let result = match op {
-                                CompoundOp::Add => Dynamic::from_ast(&(&ce + &ev)),
-                                CompoundOp::Sub => Dynamic::from_ast(&(&ce - &ev)),
-                                CompoundOp::Mul => Dynamic::from_ast(&(&ce * &ev)),
-                                CompoundOp::Div => Dynamic::from_ast(&(&ce / &ev)),
-                            };
-                            let stored = Dynamic::from_ast(&arr_z3.store(&i, &result));
-                            current_values.insert(target.node.clone(), stored);
-                        } else if let (Some(ce), Some(ev)) = (current_elem.as_real(), v.as_real()) {
-                            let result = match op {
-                                CompoundOp::Add => Dynamic::from_ast(&(&ce + &ev)),
-                                CompoundOp::Sub => Dynamic::from_ast(&(&ce - &ev)),
-                                CompoundOp::Mul => Dynamic::from_ast(&(&ce * &ev)),
-                                CompoundOp::Div => Dynamic::from_ast(&(&ce / &ev)),
-                            };
-                            let stored = Dynamic::from_ast(&arr_z3.store(&i, &result));
-                            current_values.insert(target.node.clone(), stored);
-                        }
+                if let (Some(a), Some(i), Some(v)) = (arr, idx, val)
+                    && let Some(arr_z3) = a.as_array()
+                {
+                    let current_elem = arr_z3.select(&i);
+                    if let (Some(ce), Some(ev)) = (current_elem.as_int(), v.as_int()) {
+                        let result = match op {
+                            CompoundOp::Add => Dynamic::from_ast(&(&ce + &ev)),
+                            CompoundOp::Sub => Dynamic::from_ast(&(&ce - &ev)),
+                            CompoundOp::Mul => Dynamic::from_ast(&(&ce * &ev)),
+                            CompoundOp::Div => Dynamic::from_ast(&(&ce / &ev)),
+                        };
+                        let stored = Dynamic::from_ast(&arr_z3.store(&i, &result));
+                        current_values.insert(target.node.clone(), stored);
+                    } else if let (Some(ce), Some(ev)) = (current_elem.as_real(), v.as_real()) {
+                        let result = match op {
+                            CompoundOp::Add => Dynamic::from_ast(&(&ce + &ev)),
+                            CompoundOp::Sub => Dynamic::from_ast(&(&ce - &ev)),
+                            CompoundOp::Mul => Dynamic::from_ast(&(&ce * &ev)),
+                            CompoundOp::Div => Dynamic::from_ast(&(&ce / &ev)),
+                        };
+                        let stored = Dynamic::from_ast(&arr_z3.store(&i, &result));
+                        current_values.insert(target.node.clone(), stored);
                     }
                 }
                 modified.insert(target.node.clone());
             }
             Statement::Assert { condition } => {
-                if let Some(encoded) = self.encoder.encode_expr(condition, current_values) {
-                    if let Some(bool_expr) = encoded.as_bool() {
-                        session.assert(&bool_expr);
-                    }
+                if let Some(encoded) = self.encoder.encode_expr(condition, current_values)
+                    && let Some(bool_expr) = encoded.as_bool()
+                {
+                    session.assert(&bool_expr);
                 }
             }
             Statement::If {
@@ -898,65 +898,64 @@ impl<'ctx> Verifier<'ctx> {
                 then_body,
                 else_body,
             } => {
-                if let Some(cond_encoded) = self.encoder.encode_expr(condition, current_values) {
-                    if let Some(cond_bool) = cond_encoded.as_bool() {
-                        let mut then_values = current_values.clone();
-                        let mut then_modified = std::collections::HashSet::new();
-                        for s in then_body {
+                if let Some(cond_encoded) = self.encoder.encode_expr(condition, current_values)
+                    && let Some(cond_bool) = cond_encoded.as_bool()
+                {
+                    let mut then_values = current_values.clone();
+                    let mut then_modified = std::collections::HashSet::new();
+                    for s in then_body {
+                        self.encode_statement_ssa(
+                            s,
+                            &mut then_values,
+                            post_vars,
+                            session,
+                            &mut then_modified,
+                            ssa_counter,
+                            state,
+                        );
+                    }
+
+                    let mut else_values = current_values.clone();
+                    let mut else_modified = std::collections::HashSet::new();
+                    if let Some(else_stmts) = else_body {
+                        for s in else_stmts {
                             self.encode_statement_ssa(
                                 s,
-                                &mut then_values,
+                                &mut else_values,
                                 post_vars,
                                 session,
-                                &mut then_modified,
+                                &mut else_modified,
                                 ssa_counter,
                                 state,
                             );
                         }
-
-                        let mut else_values = current_values.clone();
-                        let mut else_modified = std::collections::HashSet::new();
-                        if let Some(else_stmts) = else_body {
-                            for s in else_stmts {
-                                self.encode_statement_ssa(
-                                    s,
-                                    &mut else_values,
-                                    post_vars,
-                                    session,
-                                    &mut else_modified,
-                                    ssa_counter,
-                                    state,
-                                );
-                            }
-                        }
-
-                        let all_branch_modified: std::collections::HashSet<String> =
-                            then_modified.union(&else_modified).cloned().collect();
-
-                        for field_name in &all_branch_modified {
-                            let then_val = then_values.get(field_name);
-                            let else_val = else_values.get(field_name);
-
-                            if let (Some(tv), Some(ev)) = (then_val, else_val) {
-                                if let (Some(ti), Some(ei)) = (tv.as_int(), ev.as_int()) {
-                                    let ite_result = Dynamic::from_ast(&cond_bool.ite(&ti, &ei));
-                                    current_values.insert(field_name.clone(), ite_result);
-                                } else if let (Some(tb), Some(eb)) = (tv.as_bool(), ev.as_bool()) {
-                                    let ite_result = Dynamic::from_ast(&cond_bool.ite(&tb, &eb));
-                                    current_values.insert(field_name.clone(), ite_result);
-                                } else if let (Some(tr), Some(er)) = (tv.as_real(), ev.as_real()) {
-                                    let ite_result = Dynamic::from_ast(&cond_bool.ite(&tr, &er));
-                                    current_values.insert(field_name.clone(), ite_result);
-                                } else if let (Some(ta), Some(ea)) = (tv.as_array(), ev.as_array())
-                                {
-                                    let ite_result = Dynamic::from_ast(&cond_bool.ite(&ta, &ea));
-                                    current_values.insert(field_name.clone(), ite_result);
-                                }
-                            }
-                        }
-
-                        modified.extend(all_branch_modified);
                     }
+
+                    let all_branch_modified: std::collections::HashSet<String> =
+                        then_modified.union(&else_modified).cloned().collect();
+
+                    for field_name in &all_branch_modified {
+                        let then_val = then_values.get(field_name);
+                        let else_val = else_values.get(field_name);
+
+                        if let (Some(tv), Some(ev)) = (then_val, else_val) {
+                            if let (Some(ti), Some(ei)) = (tv.as_int(), ev.as_int()) {
+                                let ite_result = Dynamic::from_ast(&cond_bool.ite(&ti, &ei));
+                                current_values.insert(field_name.clone(), ite_result);
+                            } else if let (Some(tb), Some(eb)) = (tv.as_bool(), ev.as_bool()) {
+                                let ite_result = Dynamic::from_ast(&cond_bool.ite(&tb, &eb));
+                                current_values.insert(field_name.clone(), ite_result);
+                            } else if let (Some(tr), Some(er)) = (tv.as_real(), ev.as_real()) {
+                                let ite_result = Dynamic::from_ast(&cond_bool.ite(&tr, &er));
+                                current_values.insert(field_name.clone(), ite_result);
+                            } else if let (Some(ta), Some(ea)) = (tv.as_array(), ev.as_array()) {
+                                let ite_result = Dynamic::from_ast(&cond_bool.ite(&ta, &ea));
+                                current_values.insert(field_name.clone(), ite_result);
+                            }
+                        }
+                    }
+
+                    modified.extend(all_branch_modified);
                 }
             }
             Statement::Let { name, value, .. } => {

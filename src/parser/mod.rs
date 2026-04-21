@@ -239,7 +239,7 @@ pub fn parse_source(source: &str) -> Result<Program> {
                 negatives,
             } => {
                 let expected = format_expected(positives);
-                let neg_str: Vec<String> = negatives.iter().map(|r| rule_to_display(r)).collect();
+                let neg_str: Vec<String> = negatives.iter().map(rule_to_display).collect();
                 if !expected.is_empty() && !neg_str.is_empty() {
                     format!("expected {}; unexpected {}", expected, neg_str.join(", "))
                 } else if !expected.is_empty() {

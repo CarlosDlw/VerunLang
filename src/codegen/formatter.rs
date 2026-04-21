@@ -262,13 +262,13 @@ fn format_statement(stmt: &Statement, indent: usize) -> String {
                 out.push_str(&format_statement(&s.node, indent + 1));
             }
             if let Some(else_stmts) = else_body {
-                if else_stmts.len() == 1 {
-                    if let Statement::If { .. } = &else_stmts[0].node {
-                        out.push_str(&format!("{}}} else ", pad));
-                        let nested = format_statement(&else_stmts[0].node, indent);
-                        out.push_str(nested.trim_start());
-                        return out;
-                    }
+                if else_stmts.len() == 1
+                    && let Statement::If { .. } = &else_stmts[0].node
+                {
+                    out.push_str(&format!("{}}} else ", pad));
+                    let nested = format_statement(&else_stmts[0].node, indent);
+                    out.push_str(nested.trim_start());
+                    return out;
                 }
                 out.push_str(&format!("{}}} else {{\n", pad));
                 for s in else_stmts {

@@ -281,10 +281,10 @@ impl TypeScriptTarget {
     ) -> String {
         match stmt {
             Statement::Assign(assign) => {
-                if let Expr::Ident(name) = &assign.value.node {
-                    if *name == assign.target.node {
-                        return String::new();
-                    }
+                if let Expr::Ident(name) = &assign.value.node
+                    && *name == assign.target.node
+                {
+                    return String::new();
                 }
                 format!(
                     "this.{} = {}",
