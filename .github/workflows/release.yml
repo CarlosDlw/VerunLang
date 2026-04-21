@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build — ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: verun-linux-x86_64
+            binary: verun
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: verun-macos-arm64
+            binary: verun
+
+          - os: macos-13
+            target: x86_64-apple-darwin
+            artifact: verun-macos-x86_64
+            binary: verun
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: verun-windows-x86_64.exe
+            binary: verun.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: release-${{ matrix.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            release-${{ matrix.os }}-${{ matrix.target }}-
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }} --features static-z3
+
+      - name: Rename binary (Unix)
+        if: runner.os != 'Windows'
+        run: cp target/${{ matrix.target }}/release/${{ matrix.binary }} ${{ matrix.artifact }}
+
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Copy-Item "target/${{ matrix.target }}/release/${{ matrix.binary }}" "${{ matrix.artifact }}"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
+          generate_release_notes: true

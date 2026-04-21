@@ -5,6 +5,9 @@ edition = "2024"
 description = "Programming by Executable Invariants — formal specification language with SMT verification"
 license = "MIT"
 
+[features]
+static-z3 = ["z3/static-link-z3"]
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 pest = "2"
