@@ -62,6 +62,19 @@ state Token {
 
 ---
 
+## Download
+
+Pre-built binaries are available on the [Releases](https://github.com/CarlosDlw/VerunLang/releases) page for:
+
+| Platform | File |
+|----------|------|
+| Linux x86_64 | `verun-linux-x86_64` |
+| Windows x86_64 | `verun-windows-x86_64.exe` |
+
+> **macOS**: no pre-built binary is provided. Compile from source (see below).
+
+---
+
 ## Requirements
 
 - Rust `>=` 1.85 (edition 2024)
