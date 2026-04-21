@@ -15,8 +15,9 @@ pub fn execute(file: &str, transition: Option<&str>, show_state: bool) -> Result
     let loaded = match parse_file_with_imports(file) {
         Ok(p) => p,
         Err(e) => {
+            let file_source = std::fs::read_to_string(file).unwrap_or_default();
             if let Some(parse_err) = e.downcast_ref::<VerunError>() {
-                eprint!("{}", render_error(parse_err, "", file));
+                eprint!("{}", render_error(parse_err, &file_source, file));
             } else {
                 eprintln!("Error: {}", e);
             }

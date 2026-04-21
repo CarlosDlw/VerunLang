@@ -10,6 +10,8 @@ pub struct TypeChecker {
     env: TypeEnv,
     errors: Vec<VerunError>,
     in_postcondition: bool,
+    param_names: std::collections::HashSet<String>,
+    state_field_names: std::collections::HashSet<String>,
 }
 
 impl TypeChecker {
@@ -18,6 +20,8 @@ impl TypeChecker {
             env: TypeEnv::new(),
             errors: Vec::new(),
             in_postcondition: false,
+            param_names: std::collections::HashSet::new(),
+            state_field_names: std::collections::HashSet::new(),
         }
     }
 
@@ -195,6 +199,7 @@ impl TypeChecker {
             self.register_const(c);
         }
 
+        self.state_field_names.clear();
         let mut seen_fields: std::collections::HashSet<String> = std::collections::HashSet::new();
         for field in &state.fields {
             if !seen_fields.insert(field.name.node.clone()) {
@@ -210,6 +215,7 @@ impl TypeChecker {
                     self.env.define_var(&field.name.node, field.ty.node.clone());
                 }
             }
+            self.state_field_names.insert(field.name.node.clone());
         }
 
         let mut seen_invariants: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -231,6 +237,7 @@ impl TypeChecker {
                     });
                 }
             }
+            self.check_idents_in_expr(&inv.condition);
         }
 
         if let Some(init) = &state.init {
@@ -292,6 +299,7 @@ impl TypeChecker {
 
     fn check_transition(&mut self, transition: &Transition) {
         self.env.push_scope();
+        self.param_names.clear();
 
         if transition.body.is_empty() && transition.postconditions.is_empty() {
             self.errors.push(VerunError::EmptyTransitionBody {
@@ -308,10 +316,12 @@ impl TypeChecker {
                     self.env.define_var(&param.name.node, param.ty.node.clone());
                 }
             }
+            self.param_names.insert(param.name.node.clone());
         }
 
         for pre in &transition.preconditions {
             self.check_expr_no_old(pre);
+            self.check_idents_in_expr(pre);
             if let Some(ty) = self.infer_expr(pre) {
                 if ty != Type::Bool {
                     self.errors.push(VerunError::TypeMismatch {
@@ -329,6 +339,7 @@ impl TypeChecker {
 
         self.in_postcondition = true;
         for post in &transition.postconditions {
+            self.check_idents_in_expr(post);
             if let Some(ty) = self.infer_expr(post) {
                 if ty != Type::Bool {
                     self.errors.push(VerunError::TypeMismatch {
@@ -341,6 +352,7 @@ impl TypeChecker {
         }
         self.in_postcondition = false;
 
+        self.param_names.clear();
         self.env.pop_scope();
     }
 
@@ -365,6 +377,62 @@ impl TypeChecker {
             }
             Expr::Forall { body, .. } | Expr::Exists { body, .. } => {
                 self.check_expr_no_old(body);
+            }
+            _ => {}
+        }
+    }
+
+    fn check_idents_in_expr(&mut self, expr: &Spanned<Expr>) {
+        match &expr.node {
+            Expr::Ident(name) => {
+                if self.env.lookup_var(name).is_none() {
+                    self.errors.push(VerunError::UndefinedVariable {
+                        name: name.clone(),
+                        span: Some(expr.span),
+                    });
+                }
+            }
+            Expr::BinaryOp { left, right, .. } => {
+                self.check_idents_in_expr(left);
+                self.check_idents_in_expr(right);
+            }
+            Expr::UnaryOp { operand, .. } => {
+                self.check_idents_in_expr(operand);
+            }
+            Expr::Old(inner) => {
+                self.check_idents_in_expr(inner);
+            }
+            Expr::FnCall { args, .. } => {
+                for a in args {
+                    self.check_idents_in_expr(a);
+                }
+            }
+            Expr::Forall { var, domain, body } | Expr::Exists { var, domain, body } => {
+                self.env.push_scope();
+                if let Some(resolved) = self.env.lookup_var(&var.node).cloned().or_else(|| {
+                    // try resolving domain as a type — for set/range quantifiers the type
+                    // comes from the domain expression; just register as Int for now
+                    None
+                }) {
+                    self.env.define_var(&var.node, resolved);
+                } else {
+                    // For range quantifiers like `forall x in 0..n`, x is an integer index
+                    self.env.define_var(&var.node, crate::ast::types::Type::Int);
+                }
+                self.check_idents_in_expr(domain);
+                self.check_idents_in_expr(body);
+                self.env.pop_scope();
+            }
+            Expr::FieldAccess { object, .. } => {
+                self.check_idents_in_expr(object);
+            }
+            Expr::IndexAccess { object, index } => {
+                self.check_idents_in_expr(object);
+                self.check_idents_in_expr(index);
+            }
+            Expr::MapAccess { map, key } => {
+                self.check_idents_in_expr(map);
+                self.check_idents_in_expr(key);
             }
             _ => {}
         }
@@ -667,6 +735,13 @@ impl TypeChecker {
                     self.errors.push(VerunError::OldOutsideEnsure {
                         span: Some(expr.span),
                     });
+                } else if let Expr::Ident(name) = &inner.node {
+                    if self.param_names.contains(name.as_str()) {
+                        self.errors.push(VerunError::OldOnParameter {
+                            name: name.clone(),
+                            span: Some(expr.span),
+                        });
+                    }
                 }
                 self.infer_expr(inner)
             }

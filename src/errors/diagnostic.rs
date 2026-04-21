@@ -93,6 +93,12 @@ pub enum VerunError {
         missing: String,
         span: Option<Span>,
     },
+
+    #[error("old() cannot be applied to parameter '{name}': only state fields are allowed")]
+    OldOnParameter {
+        name: String,
+        span: Option<Span>,
+    },
 }
 
 impl VerunError {
@@ -113,6 +119,7 @@ impl VerunError {
             VerunError::MissingInit { span, .. } => *span,
             VerunError::EmptyTransitionBody { span, .. } => *span,
             VerunError::NonExhaustiveMatch { span, .. } => *span,
+            VerunError::OldOnParameter { span, .. } => *span,
         }
     }
 
@@ -133,6 +140,7 @@ impl VerunError {
             VerunError::MissingInit { .. } => Severity::Warning,
             VerunError::EmptyTransitionBody { .. } => Severity::Warning,
             VerunError::NonExhaustiveMatch { .. } => Severity::Error,
+            VerunError::OldOnParameter { .. } => Severity::Error,
         }
     }
 }
