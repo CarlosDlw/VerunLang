@@ -9,7 +9,7 @@ use crate::ast::span::Span;
 use crate::errors::diagnostic::VerunError;
 use builder::build_program;
 use grammar::parse;
-pub use imports::{parse_file_with_imports, LoadedProgram};
+pub use imports::{LoadedProgram, parse_file_with_imports};
 
 fn byte_offset_to_line_col(source: &str, offset: usize) -> (usize, usize) {
     let offset = offset.min(source.len());
@@ -34,11 +34,17 @@ fn find_token_at(source: &str, offset: usize) -> (usize, String) {
     }
     // if we hit a newline, back up to the last real char on the current line
     if bytes[i] == b'\n' {
-        let line_start = bytes[..i].iter().rposition(|&b| b == b'\n').map(|p| p + 1).unwrap_or(0);
+        let line_start = bytes[..i]
+            .iter()
+            .rposition(|&b| b == b'\n')
+            .map(|p| p + 1)
+            .unwrap_or(0);
         // scan backward to find last non-space char on this line
         let mut j = i.saturating_sub(1);
         while j >= line_start && (bytes[j] == b' ' || bytes[j] == b'\t' || bytes[j] == b'\r') {
-            if j == 0 { break; }
+            if j == 0 {
+                break;
+            }
             j -= 1;
         }
         i = j;
@@ -70,7 +76,10 @@ fn find_token_at(source: &str, offset: usize) -> (usize, String) {
         '&' => "'&'",
         '|' => "'|'",
         _ if ch.is_ascii_alphabetic() || ch == '_' => {
-            let end = bytes[i..].iter().take_while(|&&b| (b as char).is_ascii_alphanumeric() || b == b'_').count();
+            let end = bytes[i..]
+                .iter()
+                .take_while(|&&b| (b as char).is_ascii_alphanumeric() || b == b'_')
+                .count();
             return (i, format!("'{}'", &source[i..i + end]));
         }
         _ if ch.is_ascii_digit() => "number",
@@ -140,11 +149,21 @@ fn rule_to_display(rule: &grammar::Rule) -> String {
 }
 
 const BINARY_OPS: &[grammar::Rule] = &[
-    grammar::Rule::op_add, grammar::Rule::op_sub, grammar::Rule::op_mul,
-    grammar::Rule::op_div, grammar::Rule::op_mod, grammar::Rule::op_eq,
-    grammar::Rule::op_neq, grammar::Rule::op_lt, grammar::Rule::op_gt,
-    grammar::Rule::op_lte, grammar::Rule::op_gte, grammar::Rule::op_and,
-    grammar::Rule::op_or, grammar::Rule::op_implies, grammar::Rule::op_range,
+    grammar::Rule::op_add,
+    grammar::Rule::op_sub,
+    grammar::Rule::op_mul,
+    grammar::Rule::op_div,
+    grammar::Rule::op_mod,
+    grammar::Rule::op_eq,
+    grammar::Rule::op_neq,
+    grammar::Rule::op_lt,
+    grammar::Rule::op_gt,
+    grammar::Rule::op_lte,
+    grammar::Rule::op_gte,
+    grammar::Rule::op_and,
+    grammar::Rule::op_or,
+    grammar::Rule::op_implies,
+    grammar::Rule::op_range,
 ];
 
 fn format_expected(positives: &[grammar::Rule]) -> String {
@@ -156,13 +175,26 @@ fn format_expected(positives: &[grammar::Rule]) -> String {
     let is_binary_op = |r: &grammar::Rule| BINARY_OPS.contains(r);
 
     // Collapse "all state body members" into a friendly phrase
-    let state_body_rules = [const_decl, field_decl, invariant_decl, init_block, transition_decl];
+    let state_body_rules = [
+        const_decl,
+        field_decl,
+        invariant_decl,
+        init_block,
+        transition_decl,
+    ];
     if state_body_rules.iter().all(|r| positives.contains(r)) {
         return "a state member (field, invariant, init, transition, or const)".into();
     }
 
     // Collapse "all top-level items" into a friendly phrase
-    let top_level_rules = [state_def, enum_def, type_def, fn_def, import_decl, const_decl];
+    let top_level_rules = [
+        state_def,
+        enum_def,
+        type_def,
+        fn_def,
+        import_decl,
+        const_decl,
+    ];
     if top_level_rules.iter().all(|r| positives.contains(r)) {
         return "a top-level declaration (state, enum, type, fn, import, or const)".into();
     }
@@ -202,7 +234,10 @@ pub fn parse_source(source: &str) -> Result<Program> {
         let (line, col) = byte_offset_to_line_col(source, tok_offset);
 
         let base_message = match &e.variant {
-            pest::error::ErrorVariant::ParsingError { positives, negatives } => {
+            pest::error::ErrorVariant::ParsingError {
+                positives,
+                negatives,
+            } => {
                 let expected = format_expected(positives);
                 let neg_str: Vec<String> = negatives.iter().map(|r| rule_to_display(r)).collect();
                 if !expected.is_empty() && !neg_str.is_empty() {
@@ -216,7 +251,10 @@ pub fn parse_source(source: &str) -> Result<Program> {
             pest::error::ErrorVariant::CustomError { message } => message.clone(),
         };
         let message = format!("{}:{}: {}", line, col, base_message);
-        VerunError::ParseError { message, span: Some(span) }
+        VerunError::ParseError {
+            message,
+            span: Some(span),
+        }
     })?;
     build_program(pairs, source)
 }

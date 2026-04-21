@@ -76,21 +76,45 @@ impl MoveTarget {
 
         out.push_str(&format!("    struct {} has key {{\n", state.name.node));
         for field in &state.fields {
-            out.push_str(&format!("        {}: {},\n", field.name.node, self.type_to_move(&field.ty.node)));
+            out.push_str(&format!(
+                "        {}: {},\n",
+                field.name.node,
+                self.type_to_move(&field.ty.node)
+            ));
         }
         out.push_str("    }\n\n");
 
-        out.push_str(&format!("    public fun init_{}(): {} {{\n", state.name.node.to_lowercase(), state.name.node));
+        out.push_str(&format!(
+            "    public fun init_{}(): {} {{\n",
+            state.name.node.to_lowercase(),
+            state.name.node
+        ));
         out.push_str(&format!("        let s = {} {{\n", state.name.node));
         for (idx, field) in state.fields.iter().enumerate() {
             let mut initialized = "0".to_string();
             if let Some(init) = &state.init {
-                if let Some(assign) = init.assignments.iter().find(|a| a.target.node == field.name.node) {
-                    initialized = self.expr_to_move(&assign.value.node, &HashSet::new(), &HashSet::new(), false);
+                if let Some(assign) = init
+                    .assignments
+                    .iter()
+                    .find(|a| a.target.node == field.name.node)
+                {
+                    initialized = self.expr_to_move(
+                        &assign.value.node,
+                        &HashSet::new(),
+                        &HashSet::new(),
+                        false,
+                    );
                 }
             }
-            let trailing = if idx + 1 == state.fields.len() { "" } else { "," };
-            out.push_str(&format!("            {}: {}{}\n", field.name.node, initialized, trailing));
+            let trailing = if idx + 1 == state.fields.len() {
+                ""
+            } else {
+                ","
+            };
+            out.push_str(&format!(
+                "            {}: {}{}\n",
+                field.name.node, initialized, trailing
+            ));
         }
         out.push_str("        };\n");
         out.push_str("        s\n");
@@ -124,7 +148,10 @@ impl MoveTarget {
         }
 
         for stmt in &t.body {
-            out.push_str(&format!("        {};\n", self.stmt_to_move(&stmt.node, &param_set, &field_set)));
+            out.push_str(&format!(
+                "        {};\n",
+                self.stmt_to_move(&stmt.node, &param_set, &field_set)
+            ));
         }
 
         for post in &t.postconditions {
@@ -152,7 +179,13 @@ impl MoveTarget {
         }
     }
 
-    fn expr_to_move(&self, expr: &Expr, params: &HashSet<String>, fields: &HashSet<String>, in_old: bool) -> String {
+    fn expr_to_move(
+        &self,
+        expr: &Expr,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+        in_old: bool,
+    ) -> String {
         match expr {
             Expr::IntLit(v) => v.to_string(),
             Expr::RealLit(v) => format!("{}", *v as i64),
@@ -202,11 +235,20 @@ impl MoveTarget {
                 format!("{}_{}", enum_name.to_uppercase(), variant.to_uppercase())
             }
             Expr::FnCall { name, args } => {
-                let arg_strs: Vec<String> = args.iter().map(|a| self.expr_to_move(&a.node, params, fields, in_old)).collect();
+                let arg_strs: Vec<String> = args
+                    .iter()
+                    .map(|a| self.expr_to_move(&a.node, params, fields, in_old))
+                    .collect();
                 match name.node.as_str() {
                     "abs" => format!("if ({0} > 0) {{ {0} }} else {{ 0 - {0} }}", arg_strs[0]),
-                    "min" => format!("if ({0} < {1}) {{ {0} }} else {{ {1} }}", arg_strs[0], arg_strs[1]),
-                    "max" => format!("if ({0} > {1}) {{ {0} }} else {{ {1} }}", arg_strs[0], arg_strs[1]),
+                    "min" => format!(
+                        "if ({0} < {1}) {{ {0} }} else {{ {1} }}",
+                        arg_strs[0], arg_strs[1]
+                    ),
+                    "max" => format!(
+                        "if ({0} > {1}) {{ {0} }} else {{ {1} }}",
+                        arg_strs[0], arg_strs[1]
+                    ),
                     _ => format!("{}({})", name.node, arg_strs.join(", ")),
                 }
             }
@@ -214,9 +256,18 @@ impl MoveTarget {
         }
     }
 
-    fn stmt_to_move(&self, stmt: &Statement, params: &HashSet<String>, fields: &HashSet<String>) -> String {
+    fn stmt_to_move(
+        &self,
+        stmt: &Statement,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+    ) -> String {
         match stmt {
-            Statement::Assign(assign) => format!("s.{} = {}", assign.target.node, self.expr_to_move(&assign.value.node, params, fields, false)),
+            Statement::Assign(assign) => format!(
+                "s.{} = {}",
+                assign.target.node,
+                self.expr_to_move(&assign.value.node, params, fields, false)
+            ),
             Statement::CompoundAssign { target, op, value } => {
                 let rhs = self.expr_to_move(&value.node, params, fields, false);
                 match op {
@@ -226,23 +277,43 @@ impl MoveTarget {
                     CompoundOp::Div => format!("s.{0} = s.{0} / {1}", target.node, rhs),
                 }
             }
-            Statement::Assert { condition } => format!("assert!({}, 300)", self.expr_to_move(&condition.node, params, fields, false)),
-            Statement::If { condition, then_body, else_body } => {
-                let mut out = format!("if ({}) {{\n", self.expr_to_move(&condition.node, params, fields, false));
+            Statement::Assert { condition } => format!(
+                "assert!({}, 300)",
+                self.expr_to_move(&condition.node, params, fields, false)
+            ),
+            Statement::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
+                let mut out = format!(
+                    "if ({}) {{\n",
+                    self.expr_to_move(&condition.node, params, fields, false)
+                );
                 for s in then_body {
-                    out.push_str(&format!("            {};\n", self.stmt_to_move(&s.node, params, fields)));
+                    out.push_str(&format!(
+                        "            {};\n",
+                        self.stmt_to_move(&s.node, params, fields)
+                    ));
                 }
                 out.push_str("        }");
                 if let Some(else_stmts) = else_body {
                     out.push_str(" else {\n");
                     for s in else_stmts {
-                        out.push_str(&format!("            {};\n", self.stmt_to_move(&s.node, params, fields)));
+                        out.push_str(&format!(
+                            "            {};\n",
+                            self.stmt_to_move(&s.node, params, fields)
+                        ));
                     }
                     out.push_str("        }");
                 }
                 out
             }
-            Statement::Let { name, value, .. } => format!("let {} = {}", name.node, self.expr_to_move(&value.node, params, fields, false)),
+            Statement::Let { name, value, .. } => format!(
+                "let {} = {}",
+                name.node,
+                self.expr_to_move(&value.node, params, fields, false)
+            ),
             Statement::Match { expr, arms } => {
                 let subject = self.expr_to_move(&expr.node, params, fields, false);
                 let mut out = String::new();
@@ -260,7 +331,10 @@ impl MoveTarget {
                         }
                     }
                     for s in &arm.body {
-                        out.push_str(&format!("            {};\n", self.stmt_to_move(&s.node, params, fields)));
+                        out.push_str(&format!(
+                            "            {};\n",
+                            self.stmt_to_move(&s.node, params, fields)
+                        ));
                     }
                     out.push_str("        }");
                 }

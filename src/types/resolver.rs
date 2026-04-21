@@ -1,7 +1,7 @@
 use crate::ast::types::Type;
 use crate::errors::diagnostic::VerunError;
 
-use super::env::{TypeEnv, TypeEntry};
+use super::env::{TypeEntry, TypeEnv};
 
 pub fn resolve_type(ty: &Type, env: &TypeEnv) -> Result<Type, VerunError> {
     match ty {
@@ -58,16 +58,9 @@ pub fn types_compatible(expected: &Type, actual: &Type) -> bool {
                 size: s2,
             },
         ) => s1 == s2 && types_compatible(e1, e2),
-        (
-            Type::Map {
-                key: k1,
-                value: v1,
-            },
-            Type::Map {
-                key: k2,
-                value: v2,
-            },
-        ) => types_compatible(k1, k2) && types_compatible(v1, v2),
+        (Type::Map { key: k1, value: v1 }, Type::Map { key: k2, value: v2 }) => {
+            types_compatible(k1, k2) && types_compatible(v1, v2)
+        }
         (Type::Int, Type::Real) | (Type::Real, Type::Int) => true,
         _ => false,
     }

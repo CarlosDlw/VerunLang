@@ -92,7 +92,10 @@ fn type_check_type_mismatch_in_assign() {
         }
     "#;
     let errors = check_source(source);
-    assert!(!errors.is_empty(), "Should detect type mismatch: bool vs int");
+    assert!(
+        !errors.is_empty(),
+        "Should detect type mismatch: bool vs int"
+    );
 }
 
 #[test]
@@ -106,8 +109,12 @@ fn type_check_invalid_enum_variant() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors.iter().any(|e| matches!(e, verun::errors::diagnostic::VerunError::InvalidEnumVariant { .. })),
-        "Should detect invalid enum variant 'Yellow': {:?}", errors
+        errors.iter().any(|e| matches!(
+            e,
+            verun::errors::diagnostic::VerunError::InvalidEnumVariant { .. }
+        )),
+        "Should detect invalid enum variant 'Yellow': {:?}",
+        errors
     );
 }
 
@@ -122,8 +129,12 @@ fn type_check_duplicate_field() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors.iter().any(|e| matches!(e, verun::errors::diagnostic::VerunError::DuplicateDefinition { .. })),
-        "Should detect duplicate field: {:?}", errors
+        errors.iter().any(|e| matches!(
+            e,
+            verun::errors::diagnostic::VerunError::DuplicateDefinition { .. }
+        )),
+        "Should detect duplicate field: {:?}",
+        errors
     );
 }
 
@@ -138,8 +149,12 @@ fn type_check_uninitialized_field() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors.iter().any(|e| matches!(e, verun::errors::diagnostic::VerunError::UninitializedField { .. })),
-        "Should detect uninitialized field 'y': {:?}", errors
+        errors.iter().any(|e| matches!(
+            e,
+            verun::errors::diagnostic::VerunError::UninitializedField { .. }
+        )),
+        "Should detect uninitialized field 'y': {:?}",
+        errors
     );
 }
 
@@ -154,8 +169,12 @@ fn type_check_old_outside_ensure() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors.iter().any(|e| matches!(e, verun::errors::diagnostic::VerunError::OldOutsideEnsure { .. })),
-        "Should detect old() outside ensure: {:?}", errors
+        errors.iter().any(|e| matches!(
+            e,
+            verun::errors::diagnostic::VerunError::OldOutsideEnsure { .. }
+        )),
+        "Should detect old() outside ensure: {:?}",
+        errors
     );
 }
 
@@ -172,7 +191,11 @@ fn type_check_old_in_ensure_is_ok() {
         }
     "#;
     let errors = check_source(source);
-    assert!(errors.is_empty(), "old() in ensure should be valid: {:?}", errors);
+    assert!(
+        errors.is_empty(),
+        "old() in ensure should be valid: {:?}",
+        errors
+    );
 }
 
 #[test]
@@ -185,7 +208,11 @@ fn type_check_compound_assign_type_mismatch() {
         }
     "#;
     let errors = check_source(source);
-    assert!(!errors.is_empty(), "Should detect type mismatch in compound assign: {:?}", errors);
+    assert!(
+        !errors.is_empty(),
+        "Should detect type mismatch in compound assign: {:?}",
+        errors
+    );
 }
 
 #[test]
@@ -198,13 +225,17 @@ fn type_check_missing_init_warning() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors.iter().any(|e| matches!(e, verun::errors::diagnostic::VerunError::MissingInit { .. })),
+        errors
+            .iter()
+            .any(|e| matches!(e, verun::errors::diagnostic::VerunError::MissingInit { .. })),
         "Should warn about missing init: {:?}",
         errors
     );
     assert!(
-        errors.iter().all(|e| e.severity() != verun::errors::diagnostic::Severity::Error
-            || matches!(e, verun::errors::diagnostic::VerunError::MissingInit { .. })),
+        errors.iter().all(
+            |e| e.severity() != verun::errors::diagnostic::Severity::Error
+                || matches!(e, verun::errors::diagnostic::VerunError::MissingInit { .. })
+        ),
         "MissingInit should be a warning, not an error"
     );
 }
@@ -220,7 +251,10 @@ fn type_check_empty_transition_body_warning() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors.iter().any(|e| matches!(e, verun::errors::diagnostic::VerunError::EmptyTransitionBody { .. })),
+        errors.iter().any(|e| matches!(
+            e,
+            verun::errors::diagnostic::VerunError::EmptyTransitionBody { .. }
+        )),
         "Should warn about empty transition body: {:?}",
         errors
     );
@@ -265,7 +299,11 @@ fn type_check_let_and_match_ok() {
         }
     "#;
     let errors = check_source(source);
-    assert!(errors.is_empty(), "let/match should type-check: {:?}", errors);
+    assert!(
+        errors.is_empty(),
+        "let/match should type-check: {:?}",
+        errors
+    );
 }
 
 #[test]
@@ -291,9 +329,10 @@ fn type_check_non_exhaustive_match_on_enum() {
     "#;
     let errors = check_source(source);
     assert!(
-        errors
-            .iter()
-            .any(|e| matches!(e, verun::errors::diagnostic::VerunError::NonExhaustiveMatch { .. })),
+        errors.iter().any(|e| matches!(
+            e,
+            verun::errors::diagnostic::VerunError::NonExhaustiveMatch { .. }
+        )),
         "Should detect non-exhaustive enum match: {:?}",
         errors
     );

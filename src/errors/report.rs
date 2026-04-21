@@ -24,13 +24,17 @@ fn strip_location_prefix(msg: &str) -> &str {
         if i + 1 < len && bytes[i] == b':' && bytes[i + 1] == b' ' {
             let rest = &msg[i + 2..];
             // check if rest starts with digits (line number)
-            let digit_end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
+            let digit_end = rest
+                .find(|c: char| !c.is_ascii_digit())
+                .unwrap_or(rest.len());
             if digit_end > 0 {
                 let after_digits = &rest[digit_end..];
                 // expect ":digits: "
                 if after_digits.starts_with(':') {
                     let after_colon = &after_digits[1..];
-                    let col_end = after_colon.find(|c: char| !c.is_ascii_digit()).unwrap_or(after_colon.len());
+                    let col_end = after_colon
+                        .find(|c: char| !c.is_ascii_digit())
+                        .unwrap_or(after_colon.len());
                     if col_end > 0 {
                         let after_col = &after_colon[col_end..];
                         if after_col.starts_with(": ") {

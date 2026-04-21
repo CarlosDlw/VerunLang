@@ -29,10 +29,12 @@ pub fn execute(file: &str, verbose: bool, format: &str) -> Result<()> {
     let mut checker = TypeChecker::new();
     let diagnostics = checker.check(&program);
 
-    let errors: Vec<_> = diagnostics.iter()
+    let errors: Vec<_> = diagnostics
+        .iter()
         .filter(|e| e.severity() == crate::errors::diagnostic::Severity::Error)
         .collect();
-    let warnings: Vec<_> = diagnostics.iter()
+    let warnings: Vec<_> = diagnostics
+        .iter()
         .filter(|e| e.severity() == crate::errors::diagnostic::Severity::Warning)
         .collect();
 
@@ -41,7 +43,11 @@ pub fn execute(file: &str, verbose: bool, format: &str) -> Result<()> {
     }
 
     if !errors.is_empty() {
-        let report = render_errors(&errors.iter().map(|e| (*e).clone()).collect::<Vec<_>>(), &source, file);
+        let report = render_errors(
+            &errors.iter().map(|e| (*e).clone()).collect::<Vec<_>>(),
+            &source,
+            file,
+        );
         eprint!("{}", report);
         process::exit(1);
     }
@@ -74,10 +80,7 @@ pub fn execute(file: &str, verbose: bool, format: &str) -> Result<()> {
             let result = verifier.verify_state(state);
 
             if verbose {
-                eprintln!(
-                    "\n[verun] Verifying state '{}'...",
-                    result.state_name
-                );
+                eprintln!("\n[verun] Verifying state '{}'...", result.state_name);
             }
 
             for check in &result.checks {

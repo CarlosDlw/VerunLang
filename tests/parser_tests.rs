@@ -4,7 +4,11 @@ use verun::parser::parse_source;
 fn parse_counter_example() {
     let source = include_str!("../examples/counter.verun");
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse counter.verun: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse counter.verun: {:?}",
+        result.err()
+    );
     let program = result.unwrap();
     assert!(!program.items.is_empty());
 }
@@ -13,14 +17,22 @@ fn parse_counter_example() {
 fn parse_token_example() {
     let source = include_str!("../examples/token.verun");
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse token.verun: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse token.verun: {:?}",
+        result.err()
+    );
 }
 
 #[test]
 fn parse_voting_example() {
     let source = include_str!("../examples/voting.verun");
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse voting.verun: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse voting.verun: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -162,7 +174,11 @@ fn parse_error_empty_enum() {
 fn parse_auction_example() {
     let source = include_str!("../examples/auction.verun");
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse auction.verun: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse auction.verun: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -185,7 +201,11 @@ fn parse_if_else_nested() {
         }
     "#;
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse nested if/else: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse nested if/else: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -248,7 +268,11 @@ fn parse_with_const_let_match() {
         }
     "#;
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse const/let/match: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse const/let/match: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -269,7 +293,11 @@ fn parse_else_if_chain() {
         }
     "#;
     let result = parse_source(source);
-    assert!(result.is_ok(), "Failed to parse else-if chain: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Failed to parse else-if chain: {:?}",
+        result.err()
+    );
 }
 
 #[test]

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use z3::ast::{Ast, Bool, Dynamic};
 use z3::Context;
+use z3::ast::{Ast, Bool, Dynamic};
 
 use crate::ast::nodes::*;
 use crate::ast::span::Spanned;
@@ -28,10 +28,19 @@ pub struct CheckReport {
 
 #[derive(Debug, Clone)]
 pub enum CheckKind {
-    InitSatisfiesInvariant { invariant_name: String },
-    TransitionPreservesInvariant { transition_name: String, invariant_name: String },
-    PostconditionHolds { transition_name: String },
-    DeadTransition { transition_name: String },
+    InitSatisfiesInvariant {
+        invariant_name: String,
+    },
+    TransitionPreservesInvariant {
+        transition_name: String,
+        invariant_name: String,
+    },
+    PostconditionHolds {
+        transition_name: String,
+    },
+    DeadTransition {
+        transition_name: String,
+    },
 }
 
 impl std::fmt::Display for CheckKind {
@@ -40,14 +49,25 @@ impl std::fmt::Display for CheckKind {
             CheckKind::InitSatisfiesInvariant { invariant_name } => {
                 write!(f, "init satisfies invariant '{}'", invariant_name)
             }
-            CheckKind::TransitionPreservesInvariant { transition_name, invariant_name } => {
-                write!(f, "transition '{}' preserves invariant '{}'", transition_name, invariant_name)
+            CheckKind::TransitionPreservesInvariant {
+                transition_name,
+                invariant_name,
+            } => {
+                write!(
+                    f,
+                    "transition '{}' preserves invariant '{}'",
+                    transition_name, invariant_name
+                )
             }
             CheckKind::PostconditionHolds { transition_name } => {
                 write!(f, "postcondition of '{}' holds", transition_name)
             }
             CheckKind::DeadTransition { transition_name } => {
-                write!(f, "transition '{}' is reachable (not dead)", transition_name)
+                write!(
+                    f,
+                    "transition '{}' is reachable (not dead)",
+                    transition_name
+                )
             }
         }
     }
@@ -101,7 +121,8 @@ impl<'ctx> Verifier<'ctx> {
         checks.extend(self.check_init(state, &constants));
 
         for transition in &state.transitions {
-            checks.extend(self.check_transition_preserves_invariants(state, transition, &constants));
+            checks
+                .extend(self.check_transition_preserves_invariants(state, transition, &constants));
             checks.extend(self.check_postconditions(state, transition, &constants));
             checks.push(self.check_dead_transition(state, transition, &constants));
         }
@@ -130,7 +151,9 @@ impl<'ctx> Verifier<'ctx> {
         let mut vars = HashMap::new();
         for field in fields {
             let resolved_ty = self.resolve_type_for_field(&field.ty.node);
-            let var = self.encoder.encode_state_var(&field.name.node, &resolved_ty, prefix);
+            let var = self
+                .encoder
+                .encode_state_var(&field.name.node, &resolved_ty, prefix);
             vars.insert(format!("{}_{}", prefix, &field.name.node), var.clone());
             if prefix == "pre" || prefix == "init" {
                 vars.insert(field.name.node.clone(), var);
@@ -194,7 +217,11 @@ impl<'ctx> Verifier<'ctx> {
         }
     }
 
-    fn check_init(&self, state: &StateDef, constants: &HashMap<String, Dynamic<'ctx>>) -> Vec<CheckReport> {
+    fn check_init(
+        &self,
+        state: &StateDef,
+        constants: &HashMap<String, Dynamic<'ctx>>,
+    ) -> Vec<CheckReport> {
         let mut reports = Vec::new();
         let init = match &state.init {
             Some(init) => init,
@@ -236,10 +263,8 @@ impl<'ctx> Verifier<'ctx> {
                 Some(bool_expr) => {
                     session.assert(&bool_expr.not());
 
-                    let var_list: Vec<(String, Dynamic)> = vars
-                        .iter()
-                        .map(|(k, v)| (k.clone(), v.clone()))
-                        .collect();
+                    let var_list: Vec<(String, Dynamic)> =
+                        vars.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
 
                     match session.check() {
                         CheckResult::Verified => {
@@ -258,11 +283,14 @@ impl<'ctx> Verifier<'ctx> {
                                     invariant_name: inv_name.clone(),
                                 },
                                 passed: false,
-                                counterexample: Some(Counterexample::new(
-                                    format!("init violates invariant '{}'", inv_name),
-                                    ce_values,
-                                    Some(inv.span),
-                                ).with_expression(formatter::format_expr(&inv.condition.node))),
+                                counterexample: Some(
+                                    Counterexample::new(
+                                        format!("init violates invariant '{}'", inv_name),
+                                        ce_values,
+                                        Some(inv.span),
+                                    )
+                                    .with_expression(formatter::format_expr(&inv.condition.node)),
+                                ),
                             });
                         }
                         CheckResult::Unknown { reason } => {
@@ -347,7 +375,9 @@ impl<'ctx> Verifier<'ctx> {
 
         self.assert_param_refinements(&transition.params, &all_vars, &session);
 
-        self.encode_transition_body(state, transition, &pre_vars, &post_vars, &session, &all_vars);
+        self.encode_transition_body(
+            state, transition, &pre_vars, &post_vars, &session, &all_vars,
+        );
 
         let mut post_eval_vars = post_vars.clone();
         for (name, var) in &pre_vars {
@@ -408,14 +438,17 @@ impl<'ctx> Verifier<'ctx> {
                                     invariant_name: inv_name.clone(),
                                 },
                                 passed: false,
-                                counterexample: Some(Counterexample::new(
-                                    format!(
-                                        "transition '{}' can violate invariant '{}'",
-                                        transition.name.node, inv_name
-                                    ),
-                                    ce_values,
-                                    Some(transition.span),
-                                ).with_expression(formatter::format_expr(&inv.condition.node))),
+                                counterexample: Some(
+                                    Counterexample::new(
+                                        format!(
+                                            "transition '{}' can violate invariant '{}'",
+                                            transition.name.node, inv_name
+                                        ),
+                                        ce_values,
+                                        Some(transition.span),
+                                    )
+                                    .with_expression(formatter::format_expr(&inv.condition.node)),
+                                ),
                             });
                         }
                         CheckResult::Unknown { reason } => {
@@ -436,9 +469,16 @@ impl<'ctx> Verifier<'ctx> {
                 }
                 None => {
                     let msg = if warnings.is_empty() {
-                        format!("could not encode invariant '{}' for transition '{}'", inv_name, transition.name.node)
+                        format!(
+                            "could not encode invariant '{}' for transition '{}'",
+                            inv_name, transition.name.node
+                        )
                     } else {
-                        format!("could not encode invariant '{}': {}", inv_name, warnings.join("; "))
+                        format!(
+                            "could not encode invariant '{}': {}",
+                            inv_name,
+                            warnings.join("; ")
+                        )
                     };
                     reports.push(CheckReport {
                         kind: CheckKind::TransitionPreservesInvariant {
@@ -506,7 +546,9 @@ impl<'ctx> Verifier<'ctx> {
 
         self.assert_param_refinements(&transition.params, &all_vars, &session);
 
-        self.encode_transition_body(state, transition, &pre_vars, &post_vars, &session, &all_vars);
+        self.encode_transition_body(
+            state, transition, &pre_vars, &post_vars, &session, &all_vars,
+        );
 
         let mut post_eval_vars = all_vars.clone();
         for field in &state.fields {
@@ -526,7 +568,9 @@ impl<'ctx> Verifier<'ctx> {
             let _warnings = self.encoder.take_warnings();
             match encoded.and_then(|e| e.as_bool()) {
                 Some(bool_expr) => postcond_exprs.push(bool_expr),
-                None => { encode_failed = true; }
+                None => {
+                    encode_failed = true;
+                }
             }
         }
 
@@ -537,7 +581,10 @@ impl<'ctx> Verifier<'ctx> {
                 },
                 passed: false,
                 counterexample: Some(Counterexample::new(
-                    format!("could not encode postcondition of '{}'", transition.name.node),
+                    format!(
+                        "could not encode postcondition of '{}'",
+                        transition.name.node
+                    ),
                     vec![],
                     Some(transition.span),
                 )),
@@ -565,7 +612,8 @@ impl<'ctx> Verifier<'ctx> {
                 }
                 CheckResult::Failed { .. } => {
                     let ce_values = session.extract_counterexample(&var_list);
-                    let postcond_text = transition.postconditions
+                    let postcond_text = transition
+                        .postconditions
                         .iter()
                         .map(|p| formatter::format_expr(&p.node))
                         .collect::<Vec<_>>()
@@ -575,14 +623,17 @@ impl<'ctx> Verifier<'ctx> {
                             transition_name: transition.name.node.clone(),
                         },
                         passed: false,
-                        counterexample: Some(Counterexample::new(
-                            format!(
-                                "postcondition of '{}' can be violated",
-                                transition.name.node
-                            ),
-                            ce_values,
-                            Some(transition.span),
-                        ).with_expression(postcond_text)),
+                        counterexample: Some(
+                            Counterexample::new(
+                                format!(
+                                    "postcondition of '{}' can be violated",
+                                    transition.name.node
+                                ),
+                                ce_values,
+                                Some(transition.span),
+                            )
+                            .with_expression(postcond_text),
+                        ),
                     });
                 }
                 CheckResult::Unknown { reason } => {
@@ -676,13 +727,17 @@ impl<'ctx> Verifier<'ctx> {
         session: &SolverSession<'ctx>,
         all_vars: &HashMap<String, Dynamic<'ctx>>,
     ) {
-        let mut modified_fields: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut modified_fields: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
         let mut ssa_counter: HashMap<String, usize> = HashMap::new();
 
         let mut current_values: HashMap<String, Dynamic<'ctx>> = HashMap::new();
         for field in &state.fields {
             let pre_key = format!("pre_{}", field.name.node);
-            if let Some(v) = pre_vars.get(&pre_key).or_else(|| pre_vars.get(&field.name.node)) {
+            if let Some(v) = pre_vars
+                .get(&pre_key)
+                .or_else(|| pre_vars.get(&field.name.node))
+            {
                 current_values.insert(field.name.node.clone(), v.clone());
             }
         }
@@ -694,8 +749,13 @@ impl<'ctx> Verifier<'ctx> {
 
         for stmt in &transition.body {
             self.encode_statement_ssa(
-                stmt, &mut current_values, post_vars, session,
-                &mut modified_fields, &mut ssa_counter, state,
+                stmt,
+                &mut current_values,
+                post_vars,
+                session,
+                &mut modified_fields,
+                &mut ssa_counter,
+                state,
             );
         }
 
@@ -716,7 +776,12 @@ impl<'ctx> Verifier<'ctx> {
         }
     }
 
-    fn assert_eq_dynamic(&self, session: &SolverSession<'ctx>, a: &Dynamic<'ctx>, b: &Dynamic<'ctx>) {
+    fn assert_eq_dynamic(
+        &self,
+        session: &SolverSession<'ctx>,
+        a: &Dynamic<'ctx>,
+        b: &Dynamic<'ctx>,
+    ) {
         if let (Some(av), Some(bv)) = (a.as_int(), b.as_int()) {
             session.assert(&av._eq(&bv));
         } else if let (Some(av), Some(bv)) = (a.as_bool(), b.as_bool()) {
@@ -747,7 +812,9 @@ impl<'ctx> Verifier<'ctx> {
             }
             Statement::CompoundAssign { target, op, value } => {
                 let current = current_values.get(&target.node).cloned();
-                if let (Some(cur), Some(val)) = (current, self.encoder.encode_expr(value, current_values)) {
+                if let (Some(cur), Some(val)) =
+                    (current, self.encoder.encode_expr(value, current_values))
+                {
                     if let (Some(cv), Some(ev)) = (cur.as_int(), val.as_int()) {
                         let result = match op {
                             CompoundOp::Add => Dynamic::from_ast(&(&cv + &ev)),
@@ -768,7 +835,11 @@ impl<'ctx> Verifier<'ctx> {
                 }
                 modified.insert(target.node.clone());
             }
-            Statement::IndexedAssign { target, index, value } => {
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => {
                 let arr = current_values.get(&target.node).cloned();
                 let idx = self.encoder.encode_expr(index, current_values);
                 let val = self.encoder.encode_expr(value, current_values);
@@ -780,7 +851,12 @@ impl<'ctx> Verifier<'ctx> {
                 }
                 modified.insert(target.node.clone());
             }
-            Statement::IndexedCompoundAssign { target, index, op, value } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                op,
+                value,
+            } => {
                 let arr = current_values.get(&target.node).cloned();
                 let idx = self.encoder.encode_expr(index, current_values);
                 let val = self.encoder.encode_expr(value, current_values);
@@ -828,8 +904,13 @@ impl<'ctx> Verifier<'ctx> {
                         let mut then_modified = std::collections::HashSet::new();
                         for s in then_body {
                             self.encode_statement_ssa(
-                                s, &mut then_values, post_vars, session,
-                                &mut then_modified, ssa_counter, state,
+                                s,
+                                &mut then_values,
+                                post_vars,
+                                session,
+                                &mut then_modified,
+                                ssa_counter,
+                                state,
                             );
                         }
 
@@ -838,8 +919,13 @@ impl<'ctx> Verifier<'ctx> {
                         if let Some(else_stmts) = else_body {
                             for s in else_stmts {
                                 self.encode_statement_ssa(
-                                    s, &mut else_values, post_vars, session,
-                                    &mut else_modified, ssa_counter, state,
+                                    s,
+                                    &mut else_values,
+                                    post_vars,
+                                    session,
+                                    &mut else_modified,
+                                    ssa_counter,
+                                    state,
                                 );
                             }
                         }
@@ -861,7 +947,8 @@ impl<'ctx> Verifier<'ctx> {
                                 } else if let (Some(tr), Some(er)) = (tv.as_real(), ev.as_real()) {
                                     let ite_result = Dynamic::from_ast(&cond_bool.ite(&tr, &er));
                                     current_values.insert(field_name.clone(), ite_result);
-                                } else if let (Some(ta), Some(ea)) = (tv.as_array(), ev.as_array()) {
+                                } else if let (Some(ta), Some(ea)) = (tv.as_array(), ev.as_array())
+                                {
                                     let ite_result = Dynamic::from_ast(&cond_bool.ite(&ta, &ea));
                                     current_values.insert(field_name.clone(), ite_result);
                                 }
@@ -912,20 +999,23 @@ impl<'ctx> Verifier<'ctx> {
                     let mut selected = current_values.get(var).cloned();
 
                     for idx in (0..arms.len()).rev() {
-                        let cond = self.encode_match_arm_condition(&subject, &arms[idx].pattern.node);
+                        let cond =
+                            self.encode_match_arm_condition(&subject, &arms[idx].pattern.node);
                         let arm_val = arm_values[idx]
                             .get(var)
                             .cloned()
                             .or_else(|| current_values.get(var).cloned());
 
-                        if let (Some(c), Some(arm_v), Some(sel)) = (cond, arm_val, selected.clone()) {
+                        if let (Some(c), Some(arm_v), Some(sel)) = (cond, arm_val, selected.clone())
+                        {
                             if let (Some(ai), Some(si)) = (arm_v.as_int(), sel.as_int()) {
                                 selected = Some(Dynamic::from_ast(&c.ite(&ai, &si)));
                             } else if let (Some(ab), Some(sb)) = (arm_v.as_bool(), sel.as_bool()) {
                                 selected = Some(Dynamic::from_ast(&c.ite(&ab, &sb)));
                             } else if let (Some(ar), Some(sr)) = (arm_v.as_real(), sel.as_real()) {
                                 selected = Some(Dynamic::from_ast(&c.ite(&ar, &sr)));
-                            } else if let (Some(aa), Some(sa)) = (arm_v.as_array(), sel.as_array()) {
+                            } else if let (Some(aa), Some(sa)) = (arm_v.as_array(), sel.as_array())
+                            {
                                 selected = Some(Dynamic::from_ast(&c.ite(&aa, &sa)));
                             }
                         }

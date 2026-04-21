@@ -48,11 +48,9 @@ impl<'ctx> SolverSession<'ctx> {
     pub fn check(&self) -> CheckResult {
         match self.solver.check() {
             SatResult::Unsat => CheckResult::Verified,
-            SatResult::Sat => {
-                CheckResult::Failed {
-                    counterexample: Vec::new(),
-                }
-            }
+            SatResult::Sat => CheckResult::Failed {
+                counterexample: Vec::new(),
+            },
             SatResult::Unknown => CheckResult::Unknown {
                 reason: self
                     .solver

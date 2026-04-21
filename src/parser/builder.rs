@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use pest::iterators::Pair;
 
 use super::grammar::Rule;
@@ -98,10 +98,8 @@ fn build_fn_def(pair: Pair<'_, Rule>) -> Result<Spanned<Item>> {
             }
             Rule::fn_body => {
                 let stmt_list = part.into_inner().next().unwrap();
-                let stmts: Result<Vec<_>> = stmt_list
-                    .into_inner()
-                    .map(|s| build_statement(s))
-                    .collect();
+                let stmts: Result<Vec<_>> =
+                    stmt_list.into_inner().map(|s| build_statement(s)).collect();
                 body = Some(stmts?);
             }
             _ => {}
@@ -143,7 +141,10 @@ fn build_type_def(pair: Pair<'_, Rule>) -> Result<Spanned<Item>> {
         ))
     } else {
         let alias_type = build_type_expr(next)?;
-        let refinement = inner.next().map(|expr_pair| build_expr(expr_pair)).transpose()?;
+        let refinement = inner
+            .next()
+            .map(|expr_pair| build_expr(expr_pair))
+            .transpose()?;
         Ok(Spanned::new(
             Item::TypeDef(TypeDef {
                 name,
@@ -397,10 +398,8 @@ fn build_transition(pair: Pair<'_, Rule>) -> Result<Transition> {
                             let assert_span = span_from(&clause);
                             let expr_pair = clause.into_inner().next().unwrap();
                             let condition = build_expr(expr_pair)?;
-                            asserts.push(Spanned::new(
-                                Statement::Assert { condition },
-                                assert_span,
-                            ));
+                            asserts
+                                .push(Spanned::new(Statement::Assert { condition }, assert_span));
                         }
                         Rule::statement => {
                             body.push(build_statement(clause)?);
@@ -504,10 +503,8 @@ fn build_statement(pair: Pair<'_, Rule>) -> Result<Spanned<Statement>> {
             let mut parts = inner.into_inner();
             let condition = build_expr(parts.next().unwrap())?;
             let then_list = parts.next().unwrap();
-            let then_body: Result<Vec<_>> = then_list
-                .into_inner()
-                .map(|s| build_statement(s))
-                .collect();
+            let then_body: Result<Vec<_>> =
+                then_list.into_inner().map(|s| build_statement(s)).collect();
 
             let else_body = if let Some(else_clause) = parts.next() {
                 let inner_clause = else_clause.into_inner().next().unwrap();
@@ -591,10 +588,7 @@ fn build_statement(pair: Pair<'_, Rule>) -> Result<Spanned<Statement>> {
                 (None, build_expr(next)?)
             };
 
-            Ok(Spanned::new(
-                Statement::Let { name, ty, value },
-                span,
-            ))
+            Ok(Spanned::new(Statement::Let { name, ty, value }, span))
         }
         Rule::match_stmt => {
             let mut parts = inner.into_inner();
@@ -607,10 +601,8 @@ fn build_statement(pair: Pair<'_, Rule>) -> Result<Spanned<Statement>> {
                     let pattern_pair = arm_inner.next().unwrap();
                     let pattern = build_match_pattern(pattern_pair)?;
                     let stmt_list = arm_inner.next().unwrap();
-                    let body: Result<Vec<_>> = stmt_list
-                        .into_inner()
-                        .map(|s| build_statement(s))
-                        .collect();
+                    let body: Result<Vec<_>> =
+                        stmt_list.into_inner().map(|s| build_statement(s)).collect();
                     arms.push(MatchArm {
                         pattern,
                         body: body?,
@@ -619,7 +611,10 @@ fn build_statement(pair: Pair<'_, Rule>) -> Result<Spanned<Statement>> {
             }
 
             Ok(Spanned::new(
-                Statement::Match { expr: match_expr, arms },
+                Statement::Match {
+                    expr: match_expr,
+                    arms,
+                },
                 span,
             ))
         }
@@ -638,7 +633,10 @@ fn build_match_pattern(pair: Pair<'_, Rule>) -> Result<Spanned<MatchPattern>> {
             }
             let variant = parts.last().unwrap().clone();
             let enum_name = parts[..parts.len() - 1].join("::");
-            Ok(Spanned::new(MatchPattern::EnumVariant { enum_name, variant }, span))
+            Ok(Spanned::new(
+                MatchPattern::EnumVariant { enum_name, variant },
+                span,
+            ))
         }
         Rule::integer_lit => {
             let val: i64 = inner.as_str().parse()?;
@@ -671,10 +669,8 @@ fn build_statement_inner(pair: Pair<'_, Rule>) -> Result<Spanned<Statement>> {
             let mut parts = pair.into_inner();
             let condition = build_expr(parts.next().unwrap())?;
             let then_list = parts.next().unwrap();
-            let then_body: Result<Vec<_>> = then_list
-                .into_inner()
-                .map(|s| build_statement(s))
-                .collect();
+            let then_body: Result<Vec<_>> =
+                then_list.into_inner().map(|s| build_statement(s)).collect();
 
             let else_body = if let Some(else_clause) = parts.next() {
                 let inner_clause = else_clause.into_inner().next().unwrap();
@@ -824,9 +820,7 @@ fn pratt_parse(tokens: &[Pair<'_, Rule>], pos: &mut usize, min_prec: u8) -> Resu
 }
 
 fn parse_unary_expr(tokens: &[Pair<'_, Rule>], pos: &mut usize) -> Result<Spanned<Expr>> {
-    if *pos < tokens.len()
-        && matches!(tokens[*pos].as_rule(), Rule::op_neg | Rule::op_not)
-    {
+    if *pos < tokens.len() && matches!(tokens[*pos].as_rule(), Rule::op_neg | Rule::op_not) {
         let op_pair = &tokens[*pos];
         let op = match op_pair.as_rule() {
             Rule::op_neg => UnaryOp::Neg,
@@ -967,13 +961,7 @@ fn build_primary(pair: Pair<'_, Rule>) -> Result<Spanned<Expr>> {
             }
             let variant = parts.last().unwrap().clone();
             let enum_name = parts[..parts.len() - 1].join("::");
-            Ok(Spanned::new(
-                Expr::EnumVariant {
-                    enum_name,
-                    variant,
-                },
-                span,
-            ))
+            Ok(Spanned::new(Expr::EnumVariant { enum_name, variant }, span))
         }
         Rule::expr => build_expr(pair),
         _ => bail!("unexpected primary expression: {:?}", pair.as_rule()),

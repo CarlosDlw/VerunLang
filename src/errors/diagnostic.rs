@@ -5,10 +5,7 @@ use crate::ast::span::Span;
 #[derive(Debug, Error, Clone)]
 pub enum VerunError {
     #[error("parse error: {message}")]
-    ParseError {
-        message: String,
-        span: Option<Span>,
-    },
+    ParseError { message: String, span: Option<Span> },
 
     #[error("type mismatch: expected {expected}, found {found}")]
     TypeMismatch {
@@ -18,45 +15,25 @@ pub enum VerunError {
     },
 
     #[error("undefined variable: {name}")]
-    UndefinedVariable {
-        name: String,
-        span: Option<Span>,
-    },
+    UndefinedVariable { name: String, span: Option<Span> },
 
     #[error("undefined type: {name}")]
-    UndefinedType {
-        name: String,
-        span: Option<Span>,
-    },
+    UndefinedType { name: String, span: Option<Span> },
 
     #[error("duplicate definition: {name}")]
-    DuplicateDefinition {
-        name: String,
-        span: Option<Span>,
-    },
+    DuplicateDefinition { name: String, span: Option<Span> },
 
     #[error("invalid invariant: {message}")]
-    InvalidInvariant {
-        message: String,
-        span: Option<Span>,
-    },
+    InvalidInvariant { message: String, span: Option<Span> },
 
     #[error("verification failed: {message}")]
-    VerificationFailed {
-        message: String,
-        span: Option<Span>,
-    },
+    VerificationFailed { message: String, span: Option<Span> },
 
     #[error("runtime error: {message}")]
-    RuntimeError {
-        message: String,
-        span: Option<Span>,
-    },
+    RuntimeError { message: String, span: Option<Span> },
 
     #[error("codegen error: {message}")]
-    CodegenError {
-        message: String,
-    },
+    CodegenError { message: String },
 
     #[error("invalid enum variant: {variant} is not a variant of {enum_name}")]
     InvalidEnumVariant {
@@ -66,39 +43,22 @@ pub enum VerunError {
     },
 
     #[error("uninitialized field: {name}")]
-    UninitializedField {
-        name: String,
-        span: Option<Span>,
-    },
+    UninitializedField { name: String, span: Option<Span> },
 
     #[error("old() can only be used in postconditions (ensure blocks)")]
-    OldOutsideEnsure {
-        span: Option<Span>,
-    },
+    OldOutsideEnsure { span: Option<Span> },
 
     #[error("state '{name}' has no init block")]
-    MissingInit {
-        name: String,
-        span: Option<Span>,
-    },
+    MissingInit { name: String, span: Option<Span> },
 
     #[error("transition '{name}' has no body statements")]
-    EmptyTransitionBody {
-        name: String,
-        span: Option<Span>,
-    },
+    EmptyTransitionBody { name: String, span: Option<Span> },
 
     #[error("non-exhaustive match: missing variant {missing}")]
-    NonExhaustiveMatch {
-        missing: String,
-        span: Option<Span>,
-    },
+    NonExhaustiveMatch { missing: String, span: Option<Span> },
 
     #[error("old() cannot be applied to parameter '{name}': only state fields are allowed")]
-    OldOnParameter {
-        name: String,
-        span: Option<Span>,
-    },
+    OldOnParameter { name: String, span: Option<Span> },
 }
 
 impl VerunError {

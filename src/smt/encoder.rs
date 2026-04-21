@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
-use z3::ast::{Ast, Array as Z3Array, Bool, Dynamic, Int, Real as Z3Real};
+use z3::ast::{Array as Z3Array, Ast, Bool, Dynamic, Int, Real as Z3Real};
 use z3::{Context, FuncDecl, Sort};
 
 use crate::ast::nodes::*;
@@ -174,34 +174,33 @@ impl<'ctx> Encoder<'ctx> {
                     None
                 }
             }
-            Expr::FnCall { name, args } => {
-                self.encode_builtin_call(&name.node, args, vars)
-                    .or_else(|| {
-                        if let Some(decl) = self.functions.get(&name.node) {
-                            let encoded_args: Vec<Dynamic<'ctx>> = args
+            Expr::FnCall { name, args } => self
+                .encode_builtin_call(&name.node, args, vars)
+                .or_else(|| {
+                    if let Some(decl) = self.functions.get(&name.node) {
+                        let encoded_args: Vec<Dynamic<'ctx>> = args
+                            .iter()
+                            .filter_map(|a| self.encode_expr(a, vars))
+                            .collect();
+                        if encoded_args.len() == args.len() {
+                            let arg_refs: Vec<&dyn z3::ast::Ast> = encoded_args
                                 .iter()
-                                .filter_map(|a| self.encode_expr(a, vars))
+                                .map(|a| a as &dyn z3::ast::Ast)
                                 .collect();
-                            if encoded_args.len() == args.len() {
-                                let arg_refs: Vec<&dyn z3::ast::Ast> = encoded_args
-                                    .iter()
-                                    .map(|a| a as &dyn z3::ast::Ast)
-                                    .collect();
-                                Some(decl.apply(&arg_refs))
-                            } else {
-                                None
-                            }
+                            Some(decl.apply(&arg_refs))
                         } else {
-                            self.warn(format!("unknown function '{}' in SMT encoder", name.node));
                             None
                         }
-                    })
-            }
+                    } else {
+                        self.warn(format!("unknown function '{}' in SMT encoder", name.node));
+                        None
+                    }
+                }),
             Expr::StringLit(_) => {
                 self.warn("string literals not yet supported in SMT encoder".to_string());
                 None
             }
-            Expr::Range { .. } => None
+            Expr::Range { .. } => None,
         }
     }
 
@@ -221,11 +220,11 @@ impl<'ctx> Encoder<'ctx> {
                 let r = right.as_int()?;
                 Some(Dynamic::from_ast(&l.modulo(&r)))
             }
-            BinaryOp::Eq => self.encode_comparison(left, right, |a, b| a._eq(b), |a, b| a._eq(b))
+            BinaryOp::Eq => self
+                .encode_comparison(left, right, |a, b| a._eq(b), |a, b| a._eq(b))
                 .or_else(|| {
-                    left.as_array().and_then(|la| {
-                        right.as_array().map(|ra| Dynamic::from_ast(&la._eq(&ra)))
-                    })
+                    left.as_array()
+                        .and_then(|la| right.as_array().map(|ra| Dynamic::from_ast(&la._eq(&ra))))
                 }),
             BinaryOp::Neq => {
                 let eq = self.encode_binary_op(left, &BinaryOp::Eq, right)?;

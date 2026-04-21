@@ -73,7 +73,8 @@ impl Counterexample {
         }
 
         if !pre_vals.is_empty() || !post_vals.is_empty() {
-            let post_map: std::collections::HashMap<&str, &str> = post_vals.iter().copied().collect();
+            let post_map: std::collections::HashMap<&str, &str> =
+                post_vals.iter().copied().collect();
             let mut transitions: Vec<String> = Vec::new();
             for (name, pre_val) in &pre_vals {
                 if let Some(post_val) = post_map.get(name) {

@@ -54,7 +54,10 @@ impl GoTarget {
         out.push_str("const (\n");
         for (idx, variant) in e.variants.iter().enumerate() {
             if idx == 0 {
-                out.push_str(&format!("\t{}_{} {} = iota\n", e.name.node, variant.node, e.name.node));
+                out.push_str(&format!(
+                    "\t{}_{} {} = iota\n",
+                    e.name.node, variant.node, e.name.node
+                ));
             } else {
                 out.push_str(&format!("\t{}_{}\n", e.name.node, variant.node));
             }
@@ -94,7 +97,10 @@ impl GoTarget {
         }
         out.push_str("}\n\n");
 
-        out.push_str(&format!("func New{}() *{} {{\n", state.name.node, state.name.node));
+        out.push_str(&format!(
+            "func New{}() *{} {{\n",
+            state.name.node, state.name.node
+        ));
         out.push_str(&format!("\ts := &{}{{}}\n", state.name.node));
         if let Some(init) = &state.init {
             for assign in &init.assignments {
@@ -138,9 +144,16 @@ impl GoTarget {
             ));
         }
 
-        if t.postconditions.iter().any(|p| self.expr_contains_old(&p.node)) {
+        if t.postconditions
+            .iter()
+            .any(|p| self.expr_contains_old(&p.node))
+        {
             for field in &state.fields {
-                out.push_str(&format!("\t_old_{} := s.{}\n", field.name.node, self.go_field_name(&field.name.node)));
+                out.push_str(&format!(
+                    "\t_old_{} := s.{}\n",
+                    field.name.node,
+                    self.go_field_name(&field.name.node)
+                ));
             }
         }
 
@@ -152,7 +165,11 @@ impl GoTarget {
         }
 
         for inv in &state.invariants {
-            let name = inv.name.as_ref().map(|n| n.node.as_str()).unwrap_or("invariant");
+            let name = inv
+                .name
+                .as_ref()
+                .map(|n| n.node.as_str())
+                .unwrap_or("invariant");
             out.push_str(&format!(
                 "\tif !({}) {{ panic(\"invariant '{}' violated\") }}\n",
                 self.expr_to_go(&inv.condition.node, &params_set, &field_set, false),
@@ -179,11 +196,19 @@ impl GoTarget {
             Type::String => "string".to_string(),
             Type::Named(name) | Type::Enum(name) => name.clone(),
             Type::Array { element, size } => format!("[{}]{}", size, self.type_to_go(element)),
-            Type::Map { key, value } => format!("map[{}]{}", self.type_to_go(key), self.type_to_go(value)),
+            Type::Map { key, value } => {
+                format!("map[{}]{}", self.type_to_go(key), self.type_to_go(value))
+            }
         }
     }
 
-    fn expr_to_go(&self, expr: &Expr, params: &HashSet<String>, fields: &HashSet<String>, in_old: bool) -> String {
+    fn expr_to_go(
+        &self,
+        expr: &Expr,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+        in_old: bool,
+    ) -> String {
         match expr {
             Expr::IntLit(v) => v.to_string(),
             Expr::RealLit(v) => v.to_string(),
@@ -231,16 +256,31 @@ impl GoTarget {
                 format!("({} {} {})", l, op_str, r)
             }
             Expr::FieldAccess { object, field } => {
-                format!("{}.{}", self.expr_to_go(&object.node, params, fields, in_old), self.go_field_name(&field.node))
+                format!(
+                    "{}.{}",
+                    self.expr_to_go(&object.node, params, fields, in_old),
+                    self.go_field_name(&field.node)
+                )
             }
             Expr::IndexAccess { object, index } => {
-                format!("{}[{}]", self.expr_to_go(&object.node, params, fields, in_old), self.expr_to_go(&index.node, params, fields, in_old))
+                format!(
+                    "{}[{}]",
+                    self.expr_to_go(&object.node, params, fields, in_old),
+                    self.expr_to_go(&index.node, params, fields, in_old)
+                )
             }
             Expr::MapAccess { map, key } => {
-                format!("{}[{}]", self.expr_to_go(&map.node, params, fields, in_old), self.expr_to_go(&key.node, params, fields, in_old))
+                format!(
+                    "{}[{}]",
+                    self.expr_to_go(&map.node, params, fields, in_old),
+                    self.expr_to_go(&key.node, params, fields, in_old)
+                )
             }
             Expr::FnCall { name, args } => {
-                let arg_strs: Vec<String> = args.iter().map(|a| self.expr_to_go(&a.node, params, fields, in_old)).collect();
+                let arg_strs: Vec<String> = args
+                    .iter()
+                    .map(|a| self.expr_to_go(&a.node, params, fields, in_old))
+                    .collect();
                 match name.node.as_str() {
                     "abs" => format!("abs({})", arg_strs[0]),
                     "min" => format!("min({}, {})", arg_strs[0], arg_strs[1]),
@@ -252,7 +292,12 @@ impl GoTarget {
         }
     }
 
-    fn stmt_to_go(&self, stmt: &Statement, params: &HashSet<String>, fields: &HashSet<String>) -> String {
+    fn stmt_to_go(
+        &self,
+        stmt: &Statement,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+    ) -> String {
         match stmt {
             Statement::Assign(assign) => {
                 if let Expr::Ident(name) = &assign.value.node {
@@ -280,13 +325,22 @@ impl GoTarget {
                     self.expr_to_go(&value.node, params, fields, false)
                 )
             }
-            Statement::IndexedAssign { target, index, value } => format!(
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => format!(
                 "s.{}[{}] = {}",
                 self.go_field_name(&target.node),
                 self.expr_to_go(&index.node, params, fields, false),
                 self.expr_to_go(&value.node, params, fields, false)
             ),
-            Statement::IndexedCompoundAssign { target, index, op, value } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                op,
+                value,
+            } => {
                 let op_str = match op {
                     CompoundOp::Add => "+=",
                     CompoundOp::Sub => "-=",
@@ -305,8 +359,15 @@ impl GoTarget {
                 "if !({}) {{ panic(\"assertion failed\") }}",
                 self.expr_to_go(&condition.node, params, fields, false)
             ),
-            Statement::If { condition, then_body, else_body } => {
-                let mut out = format!("if {} {{\n", self.expr_to_go(&condition.node, params, fields, false));
+            Statement::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
+                let mut out = format!(
+                    "if {} {{\n",
+                    self.expr_to_go(&condition.node, params, fields, false)
+                );
                 for s in then_body {
                     let stmt_code = self.stmt_to_go(&s.node, params, fields);
                     if !stmt_code.is_empty() {
@@ -339,7 +400,10 @@ impl GoTarget {
                 for arm in arms {
                     match &arm.pattern.node {
                         MatchPattern::Wildcard => out.push_str("\tdefault:\n"),
-                        _ => out.push_str(&format!("\tcase {}:\n", self.match_pattern_to_go(&arm.pattern.node))),
+                        _ => out.push_str(&format!(
+                            "\tcase {}:\n",
+                            self.match_pattern_to_go(&arm.pattern.node)
+                        )),
                     }
                     for s in &arm.body {
                         let stmt_code = self.stmt_to_go(&s.node, params, fields);
@@ -357,7 +421,9 @@ impl GoTarget {
 
     fn match_pattern_to_go(&self, pattern: &MatchPattern) -> String {
         match pattern {
-            MatchPattern::EnumVariant { enum_name, variant } => format!("{}_{}", enum_name, variant),
+            MatchPattern::EnumVariant { enum_name, variant } => {
+                format!("{}_{}", enum_name, variant)
+            }
             MatchPattern::IntLit(v) => v.to_string(),
             MatchPattern::BoolLit(v) => v.to_string(),
             MatchPattern::StringLit(v) => format!("\"{}\"", v),

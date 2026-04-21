@@ -66,18 +66,28 @@ impl CairoTarget {
 
         out.push_str(&format!("struct {} {{\n", state.name.node));
         for field in &state.fields {
-            out.push_str(&format!("    {}: {},\n", field.name.node, self.type_to_cairo(&field.ty.node)));
+            out.push_str(&format!(
+                "    {}: {},\n",
+                field.name.node,
+                self.type_to_cairo(&field.ty.node)
+            ));
         }
         out.push_str("}\n\n");
 
-        out.push_str(&format!("fn {}_init() -> {} {{\n", state.name.node.to_lowercase(), state.name.node));
+        out.push_str(&format!(
+            "fn {}_init() -> {} {{\n",
+            state.name.node.to_lowercase(),
+            state.name.node
+        ));
         out.push_str(&format!("    let s = {} {{\n", state.name.node));
         for field in &state.fields {
             let value = if let Some(init) = &state.init {
                 init.assignments
                     .iter()
                     .find(|a| a.target.node == field.name.node)
-                    .map(|a| self.expr_to_cairo(&a.value.node, &HashSet::new(), &HashSet::new(), false))
+                    .map(|a| {
+                        self.expr_to_cairo(&a.value.node, &HashSet::new(), &HashSet::new(), false)
+                    })
                     .unwrap_or_else(|| "0".to_string())
             } else {
                 "0".to_string()
@@ -115,7 +125,10 @@ impl CairoTarget {
         }
 
         for stmt in &t.body {
-            out.push_str(&format!("    {};\n", self.stmt_to_cairo(&stmt.node, &param_set, &field_set)));
+            out.push_str(&format!(
+                "    {};\n",
+                self.stmt_to_cairo(&stmt.node, &param_set, &field_set)
+            ));
         }
 
         for inv in &state.invariants {
@@ -147,7 +160,13 @@ impl CairoTarget {
         }
     }
 
-    fn expr_to_cairo(&self, expr: &Expr, params: &HashSet<String>, fields: &HashSet<String>, in_old: bool) -> String {
+    fn expr_to_cairo(
+        &self,
+        expr: &Expr,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+        in_old: bool,
+    ) -> String {
         match expr {
             Expr::IntLit(v) => v.to_string(),
             Expr::RealLit(v) => format!("{}", *v as i64),
@@ -195,11 +214,20 @@ impl CairoTarget {
                 format!("({} {} {})", l, op_str, r)
             }
             Expr::FnCall { name, args } => {
-                let arg_strs: Vec<String> = args.iter().map(|a| self.expr_to_cairo(&a.node, params, fields, in_old)).collect();
+                let arg_strs: Vec<String> = args
+                    .iter()
+                    .map(|a| self.expr_to_cairo(&a.node, params, fields, in_old))
+                    .collect();
                 match name.node.as_str() {
                     "abs" => format!("if ({0} > 0) {{ {0} }} else {{ 0 - {0} }}", arg_strs[0]),
-                    "min" => format!("if ({0} < {1}) {{ {0} }} else {{ {1} }}", arg_strs[0], arg_strs[1]),
-                    "max" => format!("if ({0} > {1}) {{ {0} }} else {{ {1} }}", arg_strs[0], arg_strs[1]),
+                    "min" => format!(
+                        "if ({0} < {1}) {{ {0} }} else {{ {1} }}",
+                        arg_strs[0], arg_strs[1]
+                    ),
+                    "max" => format!(
+                        "if ({0} > {1}) {{ {0} }} else {{ {1} }}",
+                        arg_strs[0], arg_strs[1]
+                    ),
                     _ => format!("{}({})", name.node, arg_strs.join(", ")),
                 }
             }
@@ -207,9 +235,18 @@ impl CairoTarget {
         }
     }
 
-    fn stmt_to_cairo(&self, stmt: &Statement, params: &HashSet<String>, fields: &HashSet<String>) -> String {
+    fn stmt_to_cairo(
+        &self,
+        stmt: &Statement,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+    ) -> String {
         match stmt {
-            Statement::Assign(assign) => format!("s.{} = {}", assign.target.node, self.expr_to_cairo(&assign.value.node, params, fields, false)),
+            Statement::Assign(assign) => format!(
+                "s.{} = {}",
+                assign.target.node,
+                self.expr_to_cairo(&assign.value.node, params, fields, false)
+            ),
             Statement::CompoundAssign { target, op, value } => {
                 let rhs = self.expr_to_cairo(&value.node, params, fields, false);
                 match op {
@@ -219,23 +256,43 @@ impl CairoTarget {
                     CompoundOp::Div => format!("s.{0} = s.{0} / {1}", target.node, rhs),
                 }
             }
-            Statement::Assert { condition } => format!("assert({})", self.expr_to_cairo(&condition.node, params, fields, false)),
-            Statement::If { condition, then_body, else_body } => {
-                let mut out = format!("if ({}) {{\n", self.expr_to_cairo(&condition.node, params, fields, false));
+            Statement::Assert { condition } => format!(
+                "assert({})",
+                self.expr_to_cairo(&condition.node, params, fields, false)
+            ),
+            Statement::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
+                let mut out = format!(
+                    "if ({}) {{\n",
+                    self.expr_to_cairo(&condition.node, params, fields, false)
+                );
                 for s in then_body {
-                    out.push_str(&format!("        {};\n", self.stmt_to_cairo(&s.node, params, fields)));
+                    out.push_str(&format!(
+                        "        {};\n",
+                        self.stmt_to_cairo(&s.node, params, fields)
+                    ));
                 }
                 out.push_str("    }");
                 if let Some(else_stmts) = else_body {
                     out.push_str(" else {\n");
                     for s in else_stmts {
-                        out.push_str(&format!("        {};\n", self.stmt_to_cairo(&s.node, params, fields)));
+                        out.push_str(&format!(
+                            "        {};\n",
+                            self.stmt_to_cairo(&s.node, params, fields)
+                        ));
                     }
                     out.push_str("    }");
                 }
                 out
             }
-            Statement::Let { name, value, .. } => format!("let {} = {}", name.node, self.expr_to_cairo(&value.node, params, fields, false)),
+            Statement::Let { name, value, .. } => format!(
+                "let {} = {}",
+                name.node,
+                self.expr_to_cairo(&value.node, params, fields, false)
+            ),
             Statement::Match { expr, arms } => {
                 let subject = self.expr_to_cairo(&expr.node, params, fields, false);
                 let mut out = String::new();
@@ -253,7 +310,10 @@ impl CairoTarget {
                         }
                     }
                     for s in &arm.body {
-                        out.push_str(&format!("        {};\n", self.stmt_to_cairo(&s.node, params, fields)));
+                        out.push_str(&format!(
+                            "        {};\n",
+                            self.stmt_to_cairo(&s.node, params, fields)
+                        ));
                     }
                     out.push_str("    }");
                 }
@@ -267,7 +327,9 @@ impl CairoTarget {
 
     fn match_pattern_cairo(&self, p: &MatchPattern) -> String {
         match p {
-            MatchPattern::EnumVariant { enum_name, variant } => format!("{}::{}", enum_name, variant),
+            MatchPattern::EnumVariant { enum_name, variant } => {
+                format!("{}::{}", enum_name, variant)
+            }
             MatchPattern::IntLit(v) => v.to_string(),
             MatchPattern::BoolLit(v) => v.to_string(),
             MatchPattern::StringLit(v) => format!("'{}'", v),

@@ -107,7 +107,10 @@ fn runtime_counter_precondition_fail() {
             args.insert("amount".to_string(), Value::Int(10));
 
             let result = engine.execute_transition(transition, args, &state.invariants);
-            assert!(result.is_err(), "Should fail precondition (value=0, decrement 10)");
+            assert!(
+                result.is_err(),
+                "Should fail precondition (value=0, decrement 10)"
+            );
         }
     }
 }

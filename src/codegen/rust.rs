@@ -114,7 +114,8 @@ impl RustTarget {
         let mut out = String::new();
 
         let param_names: HashSet<String> = t.params.iter().map(|p| p.name.node.clone()).collect();
-        let field_names: HashSet<String> = state.fields.iter().map(|f| f.name.node.clone()).collect();
+        let field_names: HashSet<String> =
+            state.fields.iter().map(|f| f.name.node.clone()).collect();
 
         let params: Vec<String> = t
             .params
@@ -157,7 +158,11 @@ impl RustTarget {
         }
 
         for inv in &state.invariants {
-            let inv_name = inv.name.as_ref().map(|n| n.node.as_str()).unwrap_or("invariant");
+            let inv_name = inv
+                .name
+                .as_ref()
+                .map(|n| n.node.as_str())
+                .unwrap_or("invariant");
             out.push_str(&format!(
                 "        debug_assert!({}, \"invariant '{}' violated after '{}'\");\n",
                 self.expr_to_rust(&inv.condition.node, &param_names, &field_names, false),
@@ -200,7 +205,13 @@ impl RustTarget {
         }
     }
 
-    fn expr_to_rust(&self, expr: &Expr, params: &HashSet<String>, fields: &HashSet<String>, in_old: bool) -> String {
+    fn expr_to_rust(
+        &self,
+        expr: &Expr,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+        in_old: bool,
+    ) -> String {
         match expr {
             Expr::IntLit(v) => format!("{}", v),
             Expr::RealLit(v) => format!("{}", v),
@@ -246,10 +257,7 @@ impl RustTarget {
                 };
                 format!("({} {} {})", l, op_str, r)
             }
-            Expr::EnumVariant {
-                enum_name,
-                variant,
-            } => format!("{}::{}", enum_name, variant),
+            Expr::EnumVariant { enum_name, variant } => format!("{}::{}", enum_name, variant),
             Expr::FieldAccess { object, field } => {
                 format!(
                     "{}.{}",
@@ -280,7 +288,12 @@ impl RustTarget {
         }
     }
 
-    fn stmt_to_rust(&self, stmt: &Statement, params: &HashSet<String>, fields: &HashSet<String>) -> String {
+    fn stmt_to_rust(
+        &self,
+        stmt: &Statement,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+    ) -> String {
         match stmt {
             Statement::Assign(assign) => {
                 if let Expr::Ident(name) = &assign.value.node {
@@ -313,7 +326,12 @@ impl RustTarget {
                 then_body,
                 else_body,
             } => {
-                let cond = self.clean_condition(&self.expr_to_rust(&condition.node, params, fields, false));
+                let cond = self.clean_condition(&self.expr_to_rust(
+                    &condition.node,
+                    params,
+                    fields,
+                    false,
+                ));
                 let mut out = format!("if {} {{\n", cond);
                 for s in then_body {
                     let stmt_code = self.stmt_to_rust(&s.node, params, fields);
@@ -334,7 +352,11 @@ impl RustTarget {
                 }
                 out
             }
-            Statement::IndexedAssign { target, index, value } => {
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => {
                 format!(
                     "self.{}[{}] = {}",
                     target.node,
@@ -342,7 +364,12 @@ impl RustTarget {
                     self.expr_to_rust(&value.node, params, fields, false)
                 )
             }
-            Statement::IndexedCompoundAssign { target, index, op, value } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                op,
+                value,
+            } => {
                 let op_str = match op {
                     CompoundOp::Add => "+=",
                     CompoundOp::Sub => "-=",
@@ -380,7 +407,10 @@ impl RustTarget {
                 }
             }
             Statement::Match { expr, arms } => {
-                let mut out = format!("match {} {{\n", self.expr_to_rust(&expr.node, params, fields, false));
+                let mut out = format!(
+                    "match {} {{\n",
+                    self.expr_to_rust(&expr.node, params, fields, false)
+                );
                 for arm in arms {
                     out.push_str(&format!(
                         "            {} => {{\n",

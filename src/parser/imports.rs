@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 use crate::ast::nodes::{Item, Program};
 use crate::ast::span::Spanned;
@@ -246,11 +246,19 @@ fn rewrite_item(
     Ok(())
 }
 
-fn rewrite_field(file: &Path, alias_exports: &HashMap<String, HashSet<String>>, field: &mut Field) -> Result<()> {
+fn rewrite_field(
+    file: &Path,
+    alias_exports: &HashMap<String, HashSet<String>>,
+    field: &mut Field,
+) -> Result<()> {
     rewrite_type(file, alias_exports, &mut field.ty.node)
 }
 
-fn rewrite_type(file: &Path, alias_exports: &HashMap<String, HashSet<String>>, ty: &mut Type) -> Result<()> {
+fn rewrite_type(
+    file: &Path,
+    alias_exports: &HashMap<String, HashSet<String>>,
+    ty: &mut Type,
+) -> Result<()> {
     match ty {
         Type::Named(name) | Type::Enum(name) => {
             if let Some(rewritten) = rewrite_qualified_name(file, alias_exports, name)? {
@@ -273,8 +281,12 @@ fn rewrite_statement(
     stmt: &mut crate::ast::nodes::Statement,
 ) -> Result<()> {
     match stmt {
-        crate::ast::nodes::Statement::Assign(a) => rewrite_expr(file, alias_exports, &mut a.value.node)?,
-        crate::ast::nodes::Statement::CompoundAssign { value, .. } => rewrite_expr(file, alias_exports, &mut value.node)?,
+        crate::ast::nodes::Statement::Assign(a) => {
+            rewrite_expr(file, alias_exports, &mut a.value.node)?
+        }
+        crate::ast::nodes::Statement::CompoundAssign { value, .. } => {
+            rewrite_expr(file, alias_exports, &mut value.node)?
+        }
         crate::ast::nodes::Statement::IndexedAssign { index, value, .. } => {
             rewrite_expr(file, alias_exports, &mut index.node)?;
             rewrite_expr(file, alias_exports, &mut value.node)?;
@@ -283,7 +295,9 @@ fn rewrite_statement(
             rewrite_expr(file, alias_exports, &mut index.node)?;
             rewrite_expr(file, alias_exports, &mut value.node)?;
         }
-        crate::ast::nodes::Statement::Assert { condition } => rewrite_expr(file, alias_exports, &mut condition.node)?,
+        crate::ast::nodes::Statement::Assert { condition } => {
+            rewrite_expr(file, alias_exports, &mut condition.node)?
+        }
         crate::ast::nodes::Statement::If {
             condition,
             then_body,
@@ -308,8 +322,11 @@ fn rewrite_statement(
         crate::ast::nodes::Statement::Match { expr, arms } => {
             rewrite_expr(file, alias_exports, &mut expr.node)?;
             for arm in arms {
-                if let crate::ast::nodes::MatchPattern::EnumVariant { enum_name, .. } = &mut arm.pattern.node {
-                    if let Some(rewritten) = rewrite_qualified_name(file, alias_exports, enum_name)? {
+                if let crate::ast::nodes::MatchPattern::EnumVariant { enum_name, .. } =
+                    &mut arm.pattern.node
+                {
+                    if let Some(rewritten) = rewrite_qualified_name(file, alias_exports, enum_name)?
+                    {
                         *enum_name = rewritten;
                     }
                 }
@@ -383,7 +400,8 @@ fn rewrite_expr(
                         span: None,
                     }));
                 }
-            } else if let Some(rewritten) = rewrite_qualified_name(file, alias_exports, enum_name)? {
+            } else if let Some(rewritten) = rewrite_qualified_name(file, alias_exports, enum_name)?
+            {
                 *enum_name = rewritten;
             }
 
@@ -431,9 +449,12 @@ fn rewrite_qualified_name(
 }
 
 fn resolve_import_path(current_file: &Path, import_path: &str) -> Result<PathBuf> {
-    let parent = current_file
-        .parent()
-        .ok_or_else(|| anyhow!("cannot resolve parent directory for '{}'", current_file.display()))?;
+    let parent = current_file.parent().ok_or_else(|| {
+        anyhow!(
+            "cannot resolve parent directory for '{}'",
+            current_file.display()
+        )
+    })?;
     let joined = parent.join(import_path);
     let canonical = joined.canonicalize().map_err(|e| {
         anyhow!(

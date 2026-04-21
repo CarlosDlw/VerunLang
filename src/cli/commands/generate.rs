@@ -38,10 +38,12 @@ pub fn execute(file: &str, target: &str, output: Option<&str>) -> Result<()> {
     let mut checker = TypeChecker::new();
     let diagnostics = checker.check(&program);
 
-    let errors: Vec<_> = diagnostics.iter()
+    let errors: Vec<_> = diagnostics
+        .iter()
         .filter(|e| e.severity() == crate::errors::diagnostic::Severity::Error)
         .collect();
-    let warnings: Vec<_> = diagnostics.iter()
+    let warnings: Vec<_> = diagnostics
+        .iter()
         .filter(|e| e.severity() == crate::errors::diagnostic::Severity::Warning)
         .collect();
 
@@ -50,7 +52,11 @@ pub fn execute(file: &str, target: &str, output: Option<&str>) -> Result<()> {
     }
 
     if !errors.is_empty() {
-        let report = render_errors(&errors.iter().map(|e| (*e).clone()).collect::<Vec<_>>(), &source, file);
+        let report = render_errors(
+            &errors.iter().map(|e| (*e).clone()).collect::<Vec<_>>(),
+            &source,
+            file,
+        );
         eprint!("{}", report);
         process::exit(1);
     }
@@ -120,7 +126,11 @@ pub fn execute(file: &str, target: &str, output: Option<&str>) -> Result<()> {
 
     if let Some(out_path) = output {
         std::fs::write(out_path, &generated)?;
-        eprintln!("Generated {} code written to: {}", code_target.name(), out_path);
+        eprintln!(
+            "Generated {} code written to: {}",
+            code_target.name(),
+            out_path
+        );
     } else {
         println!("{}", generated);
     }

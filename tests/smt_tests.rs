@@ -42,7 +42,11 @@ fn verify_counter_all_pass() {
     let source = include_str!("../examples/counter.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "All checks should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "All checks should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -50,7 +54,11 @@ fn verify_token_all_pass() {
     let source = include_str!("../examples/token.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "All checks should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "All checks should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -58,7 +66,11 @@ fn verify_voting_all_pass() {
     let source = include_str!("../examples/voting.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "All checks should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "All checks should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -109,7 +121,11 @@ fn verify_auction_all_pass() {
     let source = include_str!("../examples/auction.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "All checks should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "All checks should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -135,7 +151,11 @@ fn verify_sequential_ssa_encoding() {
         }
     "#;
     let (passed, total) = verify_source(source);
-    assert_eq!(passed, total, "Sequential SSA: y=x+1 should use new x ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Sequential SSA: y=x+1 should use new x ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -195,7 +215,11 @@ fn verify_if_else_encoding() {
         }
     "#;
     let (passed, total) = verify_source(source);
-    assert_eq!(passed, total, "Clamped if/else should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Clamped if/else should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -229,7 +253,12 @@ fn verify_clamped_detects_violation() {
     let (passed, total) = verify_source(source);
     // 'adjust' should pass all checks, 'set' should fail (no bounds check)
     assert!(total > 0, "Should have checks");
-    assert!(passed < total, "set transition should violate in_bounds invariant ({}/{})", passed, total);
+    assert!(
+        passed < total,
+        "set transition should violate in_bounds invariant ({}/{})",
+        passed,
+        total
+    );
 }
 
 #[test]
@@ -237,7 +266,11 @@ fn verify_order_all_pass() {
     let source = include_str!("../examples/order.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "All checks should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "All checks should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -245,7 +278,11 @@ fn verify_buffer_array_invariant() {
     let source = include_str!("../examples/buffer.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "Buffer with store should pass all checks ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Buffer with store should pass all checks ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -253,7 +290,11 @@ fn verify_ledger_all_pass() {
     let source = include_str!("../examples/ledger.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "All checks should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "All checks should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -284,7 +325,12 @@ fn verify_array_index_in_invariant() {
     let (passed, total) = verify_source(source);
     assert!(total > 0);
     // head_positive fails because data is symbolic — data[head] could be negative
-    assert!(passed < total, "data[head] >= 0 should fail with symbolic array ({}/{})", passed, total);
+    assert!(
+        passed < total,
+        "data[head] >= 0 should fail with symbolic array ({}/{})",
+        passed,
+        total
+    );
 }
 
 #[test]
@@ -309,7 +355,11 @@ fn verify_map_access_in_invariant() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "Map state should verify ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Map state should verify ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -337,12 +387,16 @@ fn verify_uninterpreted_function() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "Uninterpreted fn with simple state should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Uninterpreted fn with simple state should pass ({}/{})",
+        passed, total
+    );
 }
 
-    #[test]
-    fn verify_match_encoding_preserves_invariant() {
-        let source = r#"
+#[test]
+fn verify_match_encoding_preserves_invariant() {
+    let source = r#"
             enum Mode { Idle, Busy }
 
             state M {
@@ -375,17 +429,25 @@ fn verify_uninterpreted_function() {
                 }
             }
         "#;
-        let (passed, total) = verify_source(source);
-        assert!(total > 0);
-        assert_eq!(passed, total, "match transition should preserve invariant ({}/{})", passed, total);
-    }
+    let (passed, total) = verify_source(source);
+    assert!(total > 0);
+    assert_eq!(
+        passed, total,
+        "match transition should preserve invariant ({}/{})",
+        passed, total
+    );
+}
 
 #[test]
 fn verify_stack_all_pass() {
     let source = include_str!("../examples/stack.verun");
     let (passed, total) = verify_source(source);
     assert!(total > 0, "Should have checks");
-    assert_eq!(passed, total, "Stack with assert should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Stack with assert should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -419,7 +481,11 @@ fn verify_array_store_preserves_invariant() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "Array store with quantified invariant should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Array store with quantified invariant should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -445,7 +511,11 @@ fn verify_assert_constrains_state() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "Assert should constrain SMT state ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Assert should constrain SMT state ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -477,7 +547,11 @@ fn verify_implies_operator() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "Implies invariant should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Implies invariant should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -521,7 +595,11 @@ fn verify_builtin_abs() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "abs() should produce non-negative ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "abs() should produce non-negative ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -551,7 +629,11 @@ fn verify_builtin_min_max() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "min/max invariants should pass ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "min/max invariants should pass ({}/{})",
+        passed, total
+    );
 }
 
 #[test]
@@ -577,7 +659,11 @@ fn verify_refinement_type_basic() {
     "#;
     let (passed, total) = verify_source(source);
     assert!(total > 0);
-    assert_eq!(passed, total, "Refinement type should help verify ({}/{})", passed, total);
+    assert_eq!(
+        passed, total,
+        "Refinement type should help verify ({}/{})",
+        passed, total
+    );
 }
 
 #[test]

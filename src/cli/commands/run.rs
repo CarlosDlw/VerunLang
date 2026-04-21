@@ -71,9 +71,7 @@ pub fn execute(file: &str, transition: Option<&str>, show_state: bool) -> Result
                     .transitions
                     .iter()
                     .find(|t| t.name.node == trans_name)
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("transition '{}' not found", trans_name)
-                    })?;
+                    .ok_or_else(|| anyhow::anyhow!("transition '{}' not found", trans_name))?;
 
                 let mut param_map = HashMap::new();
                 for (i, param) in trans.params.iter().enumerate() {
@@ -83,8 +81,7 @@ pub fn execute(file: &str, transition: Option<&str>, show_state: bool) -> Result
                     }
                 }
 
-                let events =
-                    engine.execute_transition(trans, param_map, &state.invariants)?;
+                let events = engine.execute_transition(trans, param_map, &state.invariants)?;
 
                 if !events.is_empty() {
                     println!("Events emitted:");

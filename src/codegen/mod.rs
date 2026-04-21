@@ -1,6 +1,6 @@
-pub mod formatter;
 pub mod c;
 pub mod cairo;
+pub mod formatter;
 pub mod go;
 pub mod java;
 pub mod move_lang;

@@ -28,7 +28,8 @@ impl CodeTarget for JavaTarget {
                 _ => None,
             })
             .collect();
-        let top_const_names: HashSet<String> = top_consts.iter().map(|c| c.name.node.clone()).collect();
+        let top_const_names: HashSet<String> =
+            top_consts.iter().map(|c| c.name.node.clone()).collect();
         if !top_consts.is_empty() {
             out.push_str("final class VerunConsts {\n");
             for c in top_consts {
@@ -78,7 +79,11 @@ impl JavaTarget {
     fn gen_type_def(&self, t: &crate::ast::types::TypeDef) -> String {
         let mut out = format!("class {} {{\n", t.name.node);
         for field in &t.fields {
-            out.push_str(&format!("    public {} {};\n", self.type_to_java(&field.ty.node), field.name.node));
+            out.push_str(&format!(
+                "    public {} {};\n",
+                self.type_to_java(&field.ty.node),
+                field.name.node
+            ));
         }
         out.push_str("}\n\n");
         out
@@ -92,7 +97,13 @@ impl JavaTarget {
                 "    public static final {} {} = {};\n",
                 self.type_to_java(&c.ty.node),
                 c.name.node,
-                self.expr_to_java(&c.value.node, &HashSet::new(), &HashSet::new(), top_consts, false)
+                self.expr_to_java(
+                    &c.value.node,
+                    &HashSet::new(),
+                    &HashSet::new(),
+                    top_consts,
+                    false
+                )
             ));
         }
         if !state.constants.is_empty() {
@@ -100,7 +111,11 @@ impl JavaTarget {
         }
 
         for field in &state.fields {
-            out.push_str(&format!("    public {} {};\n", self.type_to_java(&field.ty.node), field.name.node));
+            out.push_str(&format!(
+                "    public {} {};\n",
+                self.type_to_java(&field.ty.node),
+                field.name.node
+            ));
         }
         out.push('\n');
 
@@ -110,7 +125,13 @@ impl JavaTarget {
                 out.push_str(&format!(
                     "        this.{} = {};\n",
                     assign.target.node,
-                    self.expr_to_java(&assign.value.node, &HashSet::new(), &HashSet::new(), top_consts, false)
+                    self.expr_to_java(
+                        &assign.value.node,
+                        &HashSet::new(),
+                        &HashSet::new(),
+                        top_consts,
+                        false
+                    )
                 ));
             }
         }
@@ -124,16 +145,26 @@ impl JavaTarget {
         out
     }
 
-    fn gen_transition(&self, state: &StateDef, t: &Transition, top_consts: &HashSet<String>) -> String {
+    fn gen_transition(
+        &self,
+        state: &StateDef,
+        t: &Transition,
+        top_consts: &HashSet<String>,
+    ) -> String {
         let params: Vec<String> = t
             .params
             .iter()
             .map(|p| format!("{} {}", self.type_to_java(&p.ty.node), p.name.node))
             .collect();
         let params_set: HashSet<String> = t.params.iter().map(|p| p.name.node.clone()).collect();
-        let fields_set: HashSet<String> = state.fields.iter().map(|f| f.name.node.clone()).collect();
+        let fields_set: HashSet<String> =
+            state.fields.iter().map(|f| f.name.node.clone()).collect();
 
-        let mut out = format!("    public void {}({}) {{\n", t.name.node, params.join(", "));
+        let mut out = format!(
+            "    public void {}({}) {{\n",
+            t.name.node,
+            params.join(", ")
+        );
 
         for pre in &t.preconditions {
             out.push_str(&format!(
@@ -144,7 +175,10 @@ impl JavaTarget {
 
         if !t.postconditions.is_empty() {
             for field in &state.fields {
-                out.push_str(&format!("        var _old_{} = this.{};\n", field.name.node, field.name.node));
+                out.push_str(&format!(
+                    "        var _old_{} = this.{};\n",
+                    field.name.node, field.name.node
+                ));
             }
         }
 
@@ -160,10 +194,20 @@ impl JavaTarget {
         }
 
         for inv in &state.invariants {
-            let inv_name = inv.name.as_ref().map(|n| n.node.as_str()).unwrap_or("invariant");
+            let inv_name = inv
+                .name
+                .as_ref()
+                .map(|n| n.node.as_str())
+                .unwrap_or("invariant");
             out.push_str(&format!(
                 "        if (!({})) throw new RuntimeException(\"invariant '{}' violated\");\n",
-                self.expr_to_java(&inv.condition.node, &params_set, &fields_set, top_consts, false),
+                self.expr_to_java(
+                    &inv.condition.node,
+                    &params_set,
+                    &fields_set,
+                    top_consts,
+                    false
+                ),
                 inv_name
             ));
         }
@@ -187,7 +231,11 @@ impl JavaTarget {
             Type::String => "String".to_string(),
             Type::Named(name) | Type::Enum(name) => name.clone(),
             Type::Array { element, size: _ } => format!("{}[]", self.type_to_java(element)),
-            Type::Map { key, value } => format!("java.util.Map<{}, {}>", self.boxed_java_type(key), self.boxed_java_type(value)),
+            Type::Map { key, value } => format!(
+                "java.util.Map<{}, {}>",
+                self.boxed_java_type(key),
+                self.boxed_java_type(value)
+            ),
         }
     }
 
@@ -199,7 +247,11 @@ impl JavaTarget {
             Type::String => "String".to_string(),
             Type::Named(name) | Type::Enum(name) => name.clone(),
             Type::Array { element, .. } => format!("{}[]", self.boxed_java_type(element)),
-            Type::Map { key, value } => format!("java.util.Map<{}, {}>", self.boxed_java_type(key), self.boxed_java_type(value)),
+            Type::Map { key, value } => format!(
+                "java.util.Map<{}, {}>",
+                self.boxed_java_type(key),
+                self.boxed_java_type(value)
+            ),
         }
     }
 
@@ -330,13 +382,22 @@ impl JavaTarget {
                     self.expr_to_java(&value.node, params, fields, top_consts, false)
                 )
             }
-            Statement::IndexedAssign { target, index, value } => format!(
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => format!(
                 "this.{}[{}] = {}",
                 target.node,
                 self.expr_to_java(&index.node, params, fields, top_consts, false),
                 self.expr_to_java(&value.node, params, fields, top_consts, false)
             ),
-            Statement::IndexedCompoundAssign { target, index, op, value } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                op,
+                value,
+            } => {
                 let op_str = match op {
                     CompoundOp::Add => "+=",
                     CompoundOp::Sub => "-=",
@@ -355,7 +416,11 @@ impl JavaTarget {
                 "if (!({})) throw new RuntimeException(\"assertion failed\")",
                 self.expr_to_java(&condition.node, params, fields, top_consts, false)
             ),
-            Statement::If { condition, then_body, else_body } => {
+            Statement::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
                 let mut out = format!(
                     "if ({}) {{\n",
                     self.expr_to_java(&condition.node, params, fields, top_consts, false)
@@ -405,7 +470,10 @@ impl JavaTarget {
                 for arm in arms {
                     match &arm.pattern.node {
                         MatchPattern::Wildcard => out.push_str("            default:\n"),
-                        _ => out.push_str(&format!("            case {}:\n", self.match_pattern_java(&arm.pattern.node))),
+                        _ => out.push_str(&format!(
+                            "            case {}:\n",
+                            self.match_pattern_java(&arm.pattern.node)
+                        )),
                     }
                     for s in &arm.body {
                         let stmt_code = self.stmt_to_java(&s.node, params, fields, top_consts);
@@ -431,7 +499,10 @@ impl JavaTarget {
 
     fn match_pattern_java(&self, p: &MatchPattern) -> String {
         match p {
-            MatchPattern::EnumVariant { enum_name: _, variant } => variant.clone(),
+            MatchPattern::EnumVariant {
+                enum_name: _,
+                variant,
+            } => variant.clone(),
             MatchPattern::IntLit(v) => v.to_string(),
             MatchPattern::BoolLit(v) => v.to_string(),
             MatchPattern::StringLit(v) => format!("\"{}\"", v),

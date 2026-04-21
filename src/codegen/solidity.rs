@@ -158,7 +158,8 @@ impl SolidityTarget {
     fn gen_function(&self, t: &Transition, state: &StateDef) -> String {
         let mut out = String::new();
         let param_names: HashSet<String> = t.params.iter().map(|p| p.name.node.clone()).collect();
-        let field_names: HashSet<String> = state.fields.iter().map(|f| f.name.node.clone()).collect();
+        let field_names: HashSet<String> =
+            state.fields.iter().map(|f| f.name.node.clone()).collect();
 
         let params: Vec<String> = t
             .params
@@ -282,7 +283,13 @@ impl SolidityTarget {
         }
     }
 
-    fn expr_to_sol(&self, expr: &Expr, params: &HashSet<String>, fields: &HashSet<String>, in_old: bool) -> String {
+    fn expr_to_sol(
+        &self,
+        expr: &Expr,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+        in_old: bool,
+    ) -> String {
         match expr {
             Expr::IntLit(v) => format!("{}", v),
             Expr::RealLit(v) => format!("{}", v),
@@ -366,7 +373,12 @@ impl SolidityTarget {
         }
     }
 
-    fn stmt_to_sol(&self, stmt: &Statement, params: &HashSet<String>, fields: &HashSet<String>) -> String {
+    fn stmt_to_sol(
+        &self,
+        stmt: &Statement,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+    ) -> String {
         match stmt {
             Statement::Assign(assign) => {
                 if let Expr::Ident(name) = &assign.value.node {
@@ -394,7 +406,11 @@ impl SolidityTarget {
                     self.expr_to_sol(&value.node, params, fields, false)
                 )
             }
-            Statement::IndexedAssign { target, index, value } => {
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => {
                 format!(
                     "{}[{}] = {};",
                     target.node,

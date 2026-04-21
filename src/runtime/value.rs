@@ -43,10 +43,7 @@ impl fmt::Display for Value {
                 }
                 write!(f, "}}")
             }
-            Value::Enum {
-                enum_name,
-                variant,
-            } => write!(f, "{}::{}", enum_name, variant),
+            Value::Enum { enum_name, variant } => write!(f, "{}::{}", enum_name, variant),
             Value::Record(fields) => {
                 write!(f, "{{ ")?;
                 for (i, (k, v)) in fields.iter().enumerate() {

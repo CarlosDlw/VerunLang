@@ -65,7 +65,12 @@ fn format_type_def(t: &TypeDef) -> String {
 
 fn format_field(field: &Field, indent: usize) -> String {
     let pad = "    ".repeat(indent);
-    format!("{}{}: {}\n", pad, field.name.node, format_type(&field.ty.node))
+    format!(
+        "{}{}: {}\n",
+        pad,
+        field.name.node,
+        format_type(&field.ty.node)
+    )
 }
 
 fn format_type(ty: &Type) -> String {
@@ -204,7 +209,12 @@ fn format_transition(t: &Transition) -> String {
     }
 
     for emit in &t.emits {
-        let args: Vec<String> = emit.node.args.iter().map(|a| format_expr(&a.node)).collect();
+        let args: Vec<String> = emit
+            .node
+            .args
+            .iter()
+            .map(|a| format_expr(&a.node))
+            .collect();
         out.push_str(&format!(
             "        emit {}({})\n",
             emit.node.event_name.node,
@@ -234,7 +244,13 @@ fn format_statement(stmt: &Statement, indent: usize) -> String {
                 CompoundOp::Mul => "*=",
                 CompoundOp::Div => "/=",
             };
-            format!("{}{} {} {}\n", pad, target.node, op_str, format_expr(&value.node))
+            format!(
+                "{}{} {} {}\n",
+                pad,
+                target.node,
+                op_str,
+                format_expr(&value.node)
+            )
         }
         Statement::If {
             condition,
@@ -262,7 +278,11 @@ fn format_statement(stmt: &Statement, indent: usize) -> String {
             out.push_str(&format!("{}}}\n", pad));
             out
         }
-        Statement::IndexedAssign { target, index, value } => {
+        Statement::IndexedAssign {
+            target,
+            index,
+            value,
+        } => {
             format!(
                 "{}{}[{}] = {}\n",
                 pad,
@@ -394,7 +414,11 @@ pub fn format_expr(expr: &Expr) -> String {
             format!("{}.{}", format_expr(&object.node), field.node)
         }
         Expr::IndexAccess { object, index } => {
-            format!("{}[{}]", format_expr(&object.node), format_expr(&index.node))
+            format!(
+                "{}[{}]",
+                format_expr(&object.node),
+                format_expr(&index.node)
+            )
         }
         Expr::MapAccess { map, key } => {
             format!("{}[{}]", format_expr(&map.node), format_expr(&key.node))

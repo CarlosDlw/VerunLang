@@ -77,7 +77,11 @@ fn detect_import_cycle() {
         .expect_err("expected import cycle error");
     let msg = format!("{}", err);
 
-    assert!(msg.contains("import cycle detected"), "unexpected error: {}", msg);
+    assert!(
+        msg.contains("import cycle detected"),
+        "unexpected error: {}",
+        msg
+    );
 }
 
 #[test]

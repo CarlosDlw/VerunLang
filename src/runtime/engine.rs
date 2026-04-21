@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use crate::ast::nodes::*;
 use crate::ast::span::Spanned;
@@ -145,7 +145,11 @@ impl Engine {
                     }
                 }
             }
-            Statement::IndexedAssign { target, index, value } => {
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => {
                 let idx = self.eval_expr_with_params(index, params)?;
                 let val = self.eval_expr_with_params(value, params)?;
                 if let Some(arr) = self.state.get(&target.node).cloned() {
@@ -170,7 +174,12 @@ impl Engine {
                     }
                 }
             }
-            Statement::IndexedCompoundAssign { target, index, op, value } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                op,
+                value,
+            } => {
                 let idx = self.eval_expr_with_params(index, params)?;
                 let rhs = self.eval_expr_with_params(value, params)?;
                 if let Some(arr) = self.state.get(&target.node).cloned() {
@@ -246,12 +255,7 @@ impl Engine {
         }
     }
 
-    fn apply_compound_op(
-        &self,
-        current: &Value,
-        op: &CompoundOp,
-        rhs: &Value,
-    ) -> Result<Value> {
+    fn apply_compound_op(&self, current: &Value, op: &CompoundOp, rhs: &Value) -> Result<Value> {
         match (current, rhs) {
             (Value::Int(a), Value::Int(b)) => {
                 let result = match op {
@@ -328,10 +332,7 @@ impl Engine {
                 self.eval_binary_op(&l, op, &r)
             }
             Expr::Old(_) => bail!("old() can only be used in postconditions"),
-            Expr::EnumVariant {
-                enum_name,
-                variant,
-            } => Ok(Value::Enum {
+            Expr::EnumVariant { enum_name, variant } => Ok(Value::Enum {
                 enum_name: enum_name.clone(),
                 variant: variant.clone(),
             }),
@@ -397,9 +398,7 @@ impl Engine {
                     bail!("exists requires a range domain in runtime")
                 }
             }
-            Expr::FnCall { name, args } => {
-                self.eval_builtin_call(&name.node, args, params)
-            }
+            Expr::FnCall { name, args } => self.eval_builtin_call(&name.node, args, params),
             _ => bail!("unsupported expression in runtime"),
         }
     }

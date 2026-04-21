@@ -9,14 +9,8 @@ pub enum Type {
     Bool,
     String,
     Named(String),
-    Array {
-        element: Box<Type>,
-        size: usize,
-    },
-    Map {
-        key: Box<Type>,
-        value: Box<Type>,
-    },
+    Array { element: Box<Type>, size: usize },
+    Map { key: Box<Type>, value: Box<Type> },
     Enum(String),
 }
 

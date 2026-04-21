@@ -65,7 +65,11 @@ impl VyperTarget {
         }
 
         for field in &state.fields {
-            out.push_str(&format!("{}: public({})\n", field.name.node, self.type_to_vyper(&field.ty.node)));
+            out.push_str(&format!(
+                "{}: public({})\n",
+                field.name.node,
+                self.type_to_vyper(&field.ty.node)
+            ));
         }
         out.push('\n');
 
@@ -98,7 +102,8 @@ impl VyperTarget {
             .map(|p| format!("{}: {}", p.name.node, self.type_to_vyper(&p.ty.node)))
             .collect();
         let params_set: HashSet<String> = t.params.iter().map(|p| p.name.node.clone()).collect();
-        let fields_set: HashSet<String> = state.fields.iter().map(|f| f.name.node.clone()).collect();
+        let fields_set: HashSet<String> =
+            state.fields.iter().map(|f| f.name.node.clone()).collect();
 
         let mut out = String::new();
         out.push_str("@external\n");
@@ -129,7 +134,11 @@ impl VyperTarget {
         }
 
         for inv in &state.invariants {
-            let inv_name = inv.name.as_ref().map(|n| n.node.as_str()).unwrap_or("invariant");
+            let inv_name = inv
+                .name
+                .as_ref()
+                .map(|n| n.node.as_str())
+                .unwrap_or("invariant");
             body_lines.push(format!(
                 "assert {}, \"invariant '{}' violated\"",
                 self.expr_to_vyper(&inv.condition.node, &params_set, &fields_set, false),
@@ -165,11 +174,21 @@ impl VyperTarget {
             Type::String => "String[256]".to_string(),
             Type::Named(name) | Type::Enum(name) => name.clone(),
             Type::Array { element, size } => format!("{}[{}]", self.type_to_vyper(element), size),
-            Type::Map { key, value } => format!("HashMap[{}, {}]", self.type_to_vyper(key), self.type_to_vyper(value)),
+            Type::Map { key, value } => format!(
+                "HashMap[{}, {}]",
+                self.type_to_vyper(key),
+                self.type_to_vyper(value)
+            ),
         }
     }
 
-    fn expr_to_vyper(&self, expr: &Expr, params: &HashSet<String>, fields: &HashSet<String>, in_old: bool) -> String {
+    fn expr_to_vyper(
+        &self,
+        expr: &Expr,
+        params: &HashSet<String>,
+        fields: &HashSet<String>,
+        in_old: bool,
+    ) -> String {
         match expr {
             Expr::IntLit(v) => v.to_string(),
             Expr::RealLit(v) => format!("{}", *v as i64),
@@ -217,16 +236,31 @@ impl VyperTarget {
                 format!("({} {} {})", l, op_str, r)
             }
             Expr::FieldAccess { object, field } => {
-                format!("{}.{}", self.expr_to_vyper(&object.node, params, fields, in_old), field.node)
+                format!(
+                    "{}.{}",
+                    self.expr_to_vyper(&object.node, params, fields, in_old),
+                    field.node
+                )
             }
             Expr::IndexAccess { object, index } => {
-                format!("{}[{}]", self.expr_to_vyper(&object.node, params, fields, in_old), self.expr_to_vyper(&index.node, params, fields, in_old))
+                format!(
+                    "{}[{}]",
+                    self.expr_to_vyper(&object.node, params, fields, in_old),
+                    self.expr_to_vyper(&index.node, params, fields, in_old)
+                )
             }
             Expr::MapAccess { map, key } => {
-                format!("{}[{}]", self.expr_to_vyper(&map.node, params, fields, in_old), self.expr_to_vyper(&key.node, params, fields, in_old))
+                format!(
+                    "{}[{}]",
+                    self.expr_to_vyper(&map.node, params, fields, in_old),
+                    self.expr_to_vyper(&key.node, params, fields, in_old)
+                )
             }
             Expr::FnCall { name, args } => {
-                let arg_strs: Vec<String> = args.iter().map(|a| self.expr_to_vyper(&a.node, params, fields, in_old)).collect();
+                let arg_strs: Vec<String> = args
+                    .iter()
+                    .map(|a| self.expr_to_vyper(&a.node, params, fields, in_old))
+                    .collect();
                 match name.node.as_str() {
                     "abs" => format!("abs({})", arg_strs[0]),
                     "min" => format!("min({}, {})", arg_strs[0], arg_strs[1]),
@@ -268,14 +302,23 @@ impl VyperTarget {
                     self.expr_to_vyper(&value.node, params, fields, false)
                 )]
             }
-            Statement::IndexedAssign { target, index, value } => vec![format!(
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => vec![format!(
                 "{}self.{}[{}] = {}",
                 pad,
                 target.node,
                 self.expr_to_vyper(&index.node, params, fields, false),
                 self.expr_to_vyper(&value.node, params, fields, false)
             )],
-            Statement::IndexedCompoundAssign { target, index, op, value } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                op,
+                value,
+            } => {
                 let op_str = match op {
                     CompoundOp::Add => "+=",
                     CompoundOp::Sub => "-=",
@@ -302,8 +345,16 @@ impl VyperTarget {
                 name.node,
                 self.expr_to_vyper(&value.node, params, fields, false)
             )],
-            Statement::If { condition, then_body, else_body } => {
-                let mut lines = vec![format!("{}if {}:", pad, self.expr_to_vyper(&condition.node, params, fields, false))];
+            Statement::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
+                let mut lines = vec![format!(
+                    "{}if {}:",
+                    pad,
+                    self.expr_to_vyper(&condition.node, params, fields, false)
+                )];
                 if then_body.is_empty() {
                     lines.push(format!("{}    pass", pad));
                 } else {
@@ -317,7 +368,12 @@ impl VyperTarget {
                         lines.push(format!("{}    pass", pad));
                     } else {
                         for s in else_stmts {
-                            lines.extend(self.stmt_to_vyper_lines(&s.node, params, fields, indent + 1));
+                            lines.extend(self.stmt_to_vyper_lines(
+                                &s.node,
+                                params,
+                                fields,
+                                indent + 1,
+                            ));
                         }
                     }
                 }
@@ -344,7 +400,12 @@ impl VyperTarget {
                         lines.push(format!("{}    pass", pad));
                     } else {
                         for s in &arm.body {
-                            lines.extend(self.stmt_to_vyper_lines(&s.node, params, fields, indent + 1));
+                            lines.extend(self.stmt_to_vyper_lines(
+                                &s.node,
+                                params,
+                                fields,
+                                indent + 1,
+                            ));
                         }
                     }
                 }
@@ -355,7 +416,9 @@ impl VyperTarget {
 
     fn pattern_to_vyper(&self, p: &MatchPattern) -> String {
         match p {
-            MatchPattern::EnumVariant { enum_name, variant } => format!("{}.{}", enum_name, variant),
+            MatchPattern::EnumVariant { enum_name, variant } => {
+                format!("{}.{}", enum_name, variant)
+            }
             MatchPattern::IntLit(v) => v.to_string(),
             MatchPattern::BoolLit(v) => v.to_string(),
             MatchPattern::StringLit(v) => format!("\"{}\"", v),

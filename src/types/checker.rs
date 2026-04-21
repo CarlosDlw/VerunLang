@@ -3,7 +3,7 @@ use crate::ast::span::Spanned;
 use crate::ast::types::Type;
 use crate::errors::diagnostic::VerunError;
 
-use super::env::{FunctionSig, TypeEnv, TypeEntry};
+use super::env::{FunctionSig, TypeEntry, TypeEnv};
 use super::resolver::{resolve_type, types_compatible};
 
 pub struct TypeChecker {
@@ -37,7 +37,8 @@ impl TypeChecker {
                             span: Some(e.name.span),
                         });
                     }
-                    let mut seen_variants: std::collections::HashSet<String> = std::collections::HashSet::new();
+                    let mut seen_variants: std::collections::HashSet<String> =
+                        std::collections::HashSet::new();
                     for v in &e.variants {
                         if !seen_variants.insert(v.node.clone()) {
                             self.errors.push(VerunError::DuplicateDefinition {
@@ -218,7 +219,8 @@ impl TypeChecker {
             self.state_field_names.insert(field.name.node.clone());
         }
 
-        let mut seen_invariants: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut seen_invariants: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
         for inv in &state.invariants {
             if let Some(name) = &inv.name {
                 if !seen_invariants.insert(name.node.clone()) {
@@ -241,7 +243,8 @@ impl TypeChecker {
         }
 
         if let Some(init) = &state.init {
-            let mut initialized: std::collections::HashSet<String> = std::collections::HashSet::new();
+            let mut initialized: std::collections::HashSet<String> =
+                std::collections::HashSet::new();
             for assign in &init.assignments {
                 if self.env.lookup_var(&assign.target.node).is_none() {
                     self.errors.push(VerunError::UndefinedVariable {
@@ -283,7 +286,8 @@ impl TypeChecker {
             });
         }
 
-        let mut seen_transitions: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut seen_transitions: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
         for transition in &state.transitions {
             if !seen_transitions.insert(transition.name.node.clone()) {
                 self.errors.push(VerunError::DuplicateDefinition {
@@ -478,7 +482,11 @@ impl TypeChecker {
                 }
                 self.check_expr_no_old(value);
             }
-            Statement::IndexedAssign { target, index, value } => {
+            Statement::IndexedAssign {
+                target,
+                index,
+                value,
+            } => {
                 if let Some(field_ty) = self.env.lookup_var(&target.node).cloned() {
                     match &field_ty {
                         Type::Array { element, .. } => {
@@ -538,7 +546,12 @@ impl TypeChecker {
                 self.check_expr_no_old(index);
                 self.check_expr_no_old(value);
             }
-            Statement::IndexedCompoundAssign { target, index, value, .. } => {
+            Statement::IndexedCompoundAssign {
+                target,
+                index,
+                value,
+                ..
+            } => {
                 if let Some(field_ty) = self.env.lookup_var(&target.node).cloned() {
                     match &field_ty {
                         Type::Array { element, .. } => {
@@ -651,7 +664,8 @@ impl TypeChecker {
                     if let Type::Named(name) | Type::Enum(name) = ty {
                         if let Some(variants) = self.env.lookup_enum(name) {
                             let mut has_wildcard = false;
-                            let mut covered: std::collections::HashSet<String> = std::collections::HashSet::new();
+                            let mut covered: std::collections::HashSet<String> =
+                                std::collections::HashSet::new();
                             for arm in arms {
                                 match &arm.pattern.node {
                                     MatchPattern::Wildcard => has_wildcard = true,
@@ -792,7 +806,12 @@ impl TypeChecker {
             }
         }
     }
-    fn infer_call(&mut self, span: crate::ast::span::Span, name: &str, args: &[Spanned<Expr>]) -> Option<Type> {
+    fn infer_call(
+        &mut self,
+        span: crate::ast::span::Span,
+        name: &str,
+        args: &[Spanned<Expr>],
+    ) -> Option<Type> {
         if let Some(ty) = self.infer_builtin_call(name, args) {
             return Some(ty);
         }
