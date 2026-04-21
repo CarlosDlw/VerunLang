@@ -80,8 +80,8 @@ brew install z3
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/verun
-cd verun
+git clone https://github.com/CarlosDlw/VerunLang
+cd VerunLang
 cargo build --release
 # binary at target/release/verun
 ```
