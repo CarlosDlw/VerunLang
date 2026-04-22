@@ -216,7 +216,7 @@ impl RustTarget {
             Expr::IntLit(v) => format!("{}", v),
             Expr::RealLit(v) => format!("{}", v),
             Expr::BoolLit(v) => format!("{}", v),
-            Expr::StringLit(v) => format!("\"{}\"", v),
+            Expr::StringLit(v) => format!("\"{}\".to_string()", v),
             Expr::Ident(name) => {
                 if params.contains(name) {
                     name.clone()
